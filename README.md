@@ -61,6 +61,32 @@ also look at the adapter code. If you call the script with no args:
 you should get a fat permission denied back.
 
 
+### Local cluster deployment
+
+**TODO**
+
+- https://istio.io/docs/setup/getting-started/
+
+    $ cd ~
+    $ minikube start --memory=16384 --cpus=4
+    $ kubectl config use-context minikube
+    $ curl -L https://istio.io/downloadIstio | sh -
+    $ export PATH=$PWD/bin:$PATH
+
+- https://dzone.com/articles/running-local-docker-images-in-kubernetes-1
+
+new term
+
+    $ cd go/src/orchestracities/boost/
+    $ eval $(minikube docker-env)
+    $ sh scripts/make-image.sh
+
+k8s apply---see `orion_adapter_service.yaml`.
+
+see:
+- https://github.com/salrashid123/istio_custom_auth_adapter
+
+
 ### Current status
 
 All the adapter scaffolding is in place, we just need to implement the
