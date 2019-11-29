@@ -40,3 +40,19 @@ func getIdsDthHeader(p *config.Params, e error) (string, error) {
 
 	return headerName, nil
 }
+
+// TODO: get rid of this after implementing proper token validation
+func getIdsDthExpectedToken(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+
+	expected_token := strings.TrimSpace(p.IdsDthExpectedToken)
+	if len(expected_token) == 0 {
+		noCfgMsg := "no IDS-DTH token in adapter config!"
+		ilog.Errorf("%s", noCfgMsg)
+		return "", errors.New(noCfgMsg)
+	}
+
+	return expected_token, nil
+}

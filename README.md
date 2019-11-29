@@ -52,36 +52,62 @@ send an IDS-DTH token to the Mixer server. Open a new terminal and run:
 (This script too only works on MacOS but it's easy to port to other OSes.)
 
 At this point you should be able to see a status OK being returned.
-The adapter only checks the token has length >= 0, so the check should've
-succeeded. Have a look at the other terminals to see what's going on and
-also look at the adapter code. If you call the script with no args:
+The adapter checks if the token you send is the same as the one in the
+`ids_dth_expected_token` adapter config field whose value, as you've guessed
+already, is "my.fat.jwt"---edit `testdata/sample_operator_cfg.yaml` to
+change it to something else. 
 
-    $ sh scripts/send-token.sh
+If you call the script with a different token:
+
+    $ sh scripts/send-token.sh this.should.fail
 
 you should get a fat permission denied back.
 
 
 ### Local cluster deployment
 
-**TODO**
+Now on to something even more adventurous. We're going to run a Kubernetes
+local cluster using Minikube, deploy Istio with its demo profile, and run
+our adapter in it. Brace! Brace!
 
-- https://istio.io/docs/setup/getting-started/
+##### Deploying Istio
+
+After installing Minikube, download the Istio release and install the demo
+profile. Here's the short version, assuming you've already installed Minikube:
 
     $ cd ~
     $ minikube start --memory=16384 --cpus=4
     $ kubectl config use-context minikube
     $ curl -L https://istio.io/downloadIstio | sh -
+    $ cd istio-*
     $ export PATH=$PWD/bin:$PATH
+    # ...ideally you should add the above to your Bash profile.
+    $ istioctl manifest apply --set profile=demo
 
-- https://dzone.com/articles/running-local-docker-images-in-kubernetes-1
+Long version:
 
-new term
+- https://istio.io/docs/setup/getting-started/
 
-    $ cd go/src/orchestracities/boost/
+##### Adapter image
+
+Now let's build our adapter's Docker image and then make Minikube use
+that local image. In a new terminal:
+
+    $ cd ~/go/src/orchestracities/boost/
     $ eval $(minikube docker-env)
     $ sh scripts/make-image.sh
 
-k8s apply---see `orion_adapter_service.yaml`.
+The above basically stashes away our image in Minikube's own local Docker
+registry so that it can be fetched from there instead of trekking all
+the way to DockerHub. This article explains how the trick works:
+
+- https://dzone.com/articles/running-local-docker-images-in-kubernetes-1
+
+##### Deploying the adapter
+
+**TODO**
+
+k8s apply---see `deployment/orion_adapter_service.yaml`.
 
 see:
 - https://github.com/salrashid123/istio_custom_auth_adapter

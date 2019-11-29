@@ -26,7 +26,8 @@ func Authorize(r *iauth.HandleAuthorizationRequest) (*iad.CheckResult, error) {
 	ilog.Infof("subject props: %v", props)
 
 	headerValue := getStringValue(props, headerName)
-	if !validateToken(headerValue) {
+	expectedToken, err := getIdsDthExpectedToken(params, nil)
+	if !validateToken(headerValue, expectedToken) {
 		return &iad.CheckResult{
 			Status: status.WithPermissionDenied(
 				"Unauthorized: invalid JWT token"),
@@ -37,10 +38,12 @@ func Authorize(r *iauth.HandleAuthorizationRequest) (*iad.CheckResult, error) {
 	}, nil
 }
 
-// TODO: port ballerina code
-func validateToken(jwt string) bool {
-	if len(jwt) == 0 {
-		return false
+// TODO: port ballerina code and get rid of expected_token param
+func validateToken(jwt string, expectedToken string) bool {
+	if jwt == expectedToken {
+		return true
 	}
-	return true
+	return false
 }
+
+// TODO: remove ids-dht header b/f forwarding msg to orion!

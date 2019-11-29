@@ -12,4 +12,9 @@ message Params {
   
     // header name to check for IDS-DTH token
     string ids_dth_header = 1;
+
+    // expected IDS-DTH token value
+    // TODO: get rid of this after implementing proper token validation
+    string ids_dth_expected_token = 2;
+
 }

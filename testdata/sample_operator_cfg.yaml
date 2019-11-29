@@ -10,6 +10,7 @@ spec:
    address: "[::]:43210"
  params:
    ids_dth_header: "ids_dth_header"
+   ids_dth_expected_token: "my.fat.jwt"
 ---
 
 # instance for authorization template
