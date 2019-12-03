@@ -55,7 +55,7 @@ At this point you should be able to see a status OK being returned.
 The adapter checks if the token you send is the same as the one in the
 `ids_dth_expected_token` adapter config field whose value, as you've guessed
 already, is "my.fat.jwt"---edit `testdata/sample_operator_cfg.yaml` to
-change it to something else. 
+change it to something else.
 
 If you call the script with a different token:
 
@@ -83,10 +83,20 @@ profile. Here's the short version, assuming you've already installed Minikube:
     $ export PATH=$PWD/bin:$PATH
     # ...ideally you should add the above to your Bash profile.
     $ istioctl manifest apply --set profile=demo
+    $ kubectl -n istio-system edit cm istio
+    # ...set disablePolicyChecks to false, save & exit
+    $ kubectl label namespace default istio-injection=enabled
 
 Long version:
 
 - https://istio.io/docs/setup/getting-started/
+- https://istio.io/docs/setup/additional-setup/sidecar-injection/#automatic-sidecar-injection
+- https://istio.io/docs/tasks/policy-enforcement/enabling-policy/
+
+**Note**. *Policy Enforcement*. The docs say the `demo` profile should enable
+it (i.e. set `disablePolicyChecks` to `false`) but it doesn't nor does it
+work to specify that option at installation time which is why you'll have
+to manually edit the K8s config after applying the Istio `demo` profile.
 
 ##### Adapter image
 
@@ -96,6 +106,7 @@ that local image. In a new terminal:
     $ cd ~/go/src/orchestracities/boost/
     $ eval $(minikube docker-env)
     $ sh scripts/make-image.sh
+    $ exit
 
 The above basically stashes away our image in Minikube's own local Docker
 registry so that it can be fetched from there instead of trekking all
@@ -103,23 +114,101 @@ the way to DockerHub. This article explains how the trick works:
 
 - https://dzone.com/articles/running-local-docker-images-in-kubernetes-1
 
+##### Deploying a dummy target service
+
+Our adapter is supposed to process attributes of messages directed to
+Orion. For the sake of testing though, there's no need to deploy Orion
+& friends, any dummy HTTP service will do but a better option is `httpbin`
+which can echo back HTTP messages too---this will come in handy to e.g.
+check the adapter removes IDS token headers before the HTTP request gets
+passed down to the target service.
+
+    $ cd ~/go/src/orchestracities/boost/
+    $ kubectl apply -f deployment/httpbin_service.yaml
+    $ kubectl apply -f deployment/ingress_routing.yaml
+
+Now you should wait a bit until `httpbin` and all Istio services/pods are
+alive & kicking. Then you should be able to see what HTTP headers the
+`httpbin` service gets to see when you `curl` a request:
+
+    $ source scripts/cluster-url.sh
+    $ curl -v "$BASE_URL"/headers
+
+Should we have some fun with HTTP headers?
+
+    $ curl -v "$BASE_URL"/headers \
+        -H this-wont-be-dropped:cool-bananas! \
+        -H ids-dth:will-be-dropped
+
+The `ids-dth` header gets dropped from the HTTP request before it
+gets to the `httpbin` service (see `ingress_routing.yaml`) whereas
+any other header gets passed on.
+
 ##### Deploying the adapter
+
+Time to plonk in our token-buster baton wielding copper.
+
+    $ kubectl apply -f deployment/template.yaml
+    $ kubectl apply -f deployment/orionadapter.yaml
+    $ kubectl apply -f deployment/orion_adapter_service.yaml
+    $ kubectl apply -f deployment/sample_operator_cfg.yaml
+
+Check the Mixer made friends with our boy:
+
+    $ kubectl -n istio-system logs \
+        $(kubectl -n istio-system get pods -lapp=telemetry \
+            -o jsonpath='{.items[0].metadata.name}') | grep orion
+
+(You should see: `grpcAdapter	Connected to: orionadapterservice:43210`)
+
+See if we can get still away with an invalid token...
+
+    $ curl -v "$BASE_URL"/headers \
+        -H ids-dth:catch.me.copper
+
+You should get back a fat 403 with a message along the lines of:
+
+    PERMISSION_DENIED:h1.handler.istio-system:Unauthorized: invalid JWT token
+
+Like I said earlier, the adapter checks if the token you send is the same
+as the one in the `ids_dth_expected_token` adapter config field which is
+set to "my.fat.jwt"---see `deployment/sample_operator_cfg.yaml`. What
+happens if we send a valid token then?
+
+    $ curl -v "$BASE_URL"/headers \
+        -H ids-dth:my.fat.jwt
+
+Well, the request should go through to the target `httpbin` service
+which should reply with the HTTP headers it gets to see and there
+should be no `ids-dth` header in the returned list since our routing
+chops that head(-er) off before sending the request on to `httpbin`.
+Happy days!
+
+##### Cleaning up
 
 **TODO**
 
-k8s apply---see `deployment/orion_adapter_service.yaml`.
+    $ kubectl delete gateway httpbin-gateway
+    $ kubectl delete virtualservice httpbin
+    $ kubectl delete service httpbin
+    $ kubectl delete deployment httpbin
+    $ ...
 
-see:
-- https://github.com/salrashid123/istio_custom_auth_adapter
+or simply:
+
+    $ minikube delete
+
+if you have plenty of time in your hands and don't mind the schlep to
+redo everything from a clean slate!
 
 
 ### Current status
 
-All the adapter scaffolding is in place, we just need to implement the
-`validateToken` function by porting the Ballerina code over which shouldn't
-be too hard. Coming soon:
-
+* adapter scaffolding (done)
+* token validation against configured value (done, see `validateToken`)
+* dropping of token header before forwarding message to Orion (done)
+* response token header injection using a configured token value (in progress)
+* K8s + Istio + adapter local and cloud deployment (done)
 * mutual TLS (almost there!)
-* K8s + Istio + adapter local and cloud deployment (in progress)
 * Istio gateway / virtual service to handle IDS / Fiware message translation
   (will take blood, sweat and tears :-)

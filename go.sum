@@ -648,6 +648,7 @@ istio.io/istio v0.0.0-20191120065046-31a840407eca/go.mod h1:d5uXXlRUITpnxMcwf+M2
 istio.io/istio v0.0.0-20191121040522-ed45dfa4bbbd h1:3Cau7zodf4az1dAui/Zzyn7A+LqXvziIVjgGMGfH8qQ=
 istio.io/istio v0.0.0-20191121202423-9eee14d60c6c h1:jJRErfAUEqZSlLtWBDU5PzUpeZpW5QEAy1TNDWU9xns=
 istio.io/istio v0.0.0-20191124030738-4948416d0fb2 h1:uOfeWJdjFt/Za8TLZxAUCRadG1H1tnW20zT1tNjwY8E=
+istio.io/istio v0.0.0-20191203054312-59a62ad84b7e h1:I4Po6pnwKwgm0PvwD0w5NPiKpGaKeAkUeczwuhRNbJE=
 istio.io/operator v0.0.0-20191116191844-787ab3bb075b/go.mod h1:aAkwaj5S0Yl3v762WBG2fz/cOP/Zd46LadvD7PQosuI=
 istio.io/pkg v0.0.0-20191029184635-5c2f5ef63692/go.mod h1:O7Uqtzc1w7+NiEV2TUeO2yPoR+4GlwlDgSocYZMjBfs=
 istio.io/pkg v0.0.0-20191113122952-4f521de9c8ca h1:WmfXcc/AU/+r7CULqKx53YKd6I/iMe1WOYhuspjoJDM=

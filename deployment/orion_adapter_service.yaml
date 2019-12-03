@@ -15,7 +15,7 @@ spec:
   selector:
     app: orionadapter
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: orionadapter
@@ -24,6 +24,9 @@ metadata:
     app: orionadapter
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: orionadapter
   template:
     metadata:
       labels:
