@@ -27,6 +27,9 @@ in the sink of no return :-)
 * kubectl >= 1.7
 * docker
 
+**Note**. *Local repo location*. I'm going to assume you've cloned this
+repo in `$GOPATH/src/orchestracities/boost`, i.e. you're sticking to Go's
+customary layout rules.
 
 ### Taking it for a spin
 
@@ -103,7 +106,7 @@ to manually edit the K8s config after applying the Istio `demo` profile.
 Now let's build our adapter's Docker image and then make Minikube use
 that local image. In a new terminal:
 
-    $ cd ~/go/src/orchestracities/boost/
+    $ cd $GOPATH/src/orchestracities/boost/
     $ eval $(minikube docker-env)
     $ sh scripts/make-image.sh
     $ exit
@@ -123,7 +126,7 @@ which can echo back HTTP messages too---this will come in handy to e.g.
 check the adapter removes IDS token headers before the HTTP request gets
 passed down to the target service.
 
-    $ cd ~/go/src/orchestracities/boost/
+    $ cd $GOPATH/src/orchestracities/boost/
     $ kubectl apply -f deployment/httpbin_service.yaml
     $ kubectl apply -f deployment/ingress_routing.yaml
 
