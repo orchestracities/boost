@@ -1,43 +1,28 @@
 #!/usr/bin/env bash
 
-# Generate Mixer config code and YAML for our adapter.
-# Note the way we're doing this is kinda insane, but it looks like there's
-# no easy way around it. First we clone the Istio repo, then we sneakily
-# copy our adpater files under the Mixer tree where Istio code gen expects
-# them to be. (See: https://github.com/istio/istio/wiki/Mixer-Out-Of-Process-Adapter-Walkthrough)
-# Then we run code gen in the Istio repo and finally copy the generated files
-# back over to our repo. Yuck!
-# We set the BUILD_WITH_CONTAINER flag to tell Istio code gen to use a 
-# container to build stuff rather than a local tool chain. The downside
-# is that it takes a loooong time to do a build. For what is worth, I
-# tried to generate those files directly, running from our repo base dir:
+# Generate Mixer config code for our adapter as well as acompanying
+# cloud infrastructure resource defs (YAML files) and docs.
 #
-#     REPO_ROOT=$ISTIO_REPO $ISTIO_REPO/bin/mixer_codegen.sh \
-#     -a orionadapter/config/config.proto \
-#     -o ./orionadapter/config/ \
-#     -x "-s=false -n orionadapter -t authorization"
-# 
-# But that wouldn't work cos mixer_codegen.sh prepends the Isto repo path
-# to the -a arg value---see how -a gets handled on line 49. So it looks like
-# we're forced to copy our files over to the Istio repo. Now, after copying
-# the files over, in principle we should be able to run the above command,
-# provided we have all tools required by code gen in our path. I've managed
-# to narrow down the deps to:
+# That's how it works:
 #
-# * go protocol buffers plugins:
-#     - go get -u github.com/golang/protobuf/protoc-gen-go
-#     - go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
-# * gogo protocol buffers plugins:
-#     - go get github.com/gogo/protobuf/proto
-#     - go get github.com/gogo/protobuf/protoc-gen-gogoslick
-#     - go get github.com/gogo/protobuf/gogoproto
-# 
-# with those tools installed in GOPATH/bin I was able to run the script,
-# after adding '-d false' to skip docs generation. In fact, that fails
-# since code gen is looking for `protoc-gen-docs` instead of `protoc-gen-doc`---
-# note the extra 's'! Anyhoo, even after I went past that, the script bombed
-# out cos `mixgen` was nowhere to be found. Supposedly this is the last hurdle,
-# but didn't have time to work it out so I just left it.
+# 1. Our `orionadapter/config/version.go` contains a Go code generation
+#    instruction to run Mixer's `mixer_codegen.sh`.
+# 2. We clone the Istio repo, then we sneakily copy our adapter files
+#    under the Mixer tree where Istio codegen expects them to be.
+# 3. We run codegen in the Istio repo and finally copy the generated
+#    files back over to our repo.
+#
+# Yuck! It's kinda insane, but that's how you're supposed to do it
+# according to:
+#
+# - https://github.com/istio/istio/wiki/Mixer-Out-Of-Process-Adapter-Walkthrough
+#
+# Read more about it in our `docs/codegen.md`.
+#
+# In step 3, we set the BUILD_WITH_CONTAINER flag to tell Istio codegen
+# to use a container to build stuff rather than a local toolchain. The
+# downside is that it takes a loooong time to do a build.
+#
 
 set -e
 

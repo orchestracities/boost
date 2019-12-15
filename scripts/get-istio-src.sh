@@ -3,6 +3,8 @@
 # Clone the Istio repo in the GOPATH where Istio codegen expects it to be.
 # If cloned already, clean it up since an earlier run to generate our adpater
 # config would leave around quite a bit of junk.
+#
+# TODO: pin repo version to revision of `1.4.2` tag.
 
 set -e
 
