@@ -35,7 +35,7 @@ customary layout rules.
 
 For the brave:
 
-    $ sh scripts/gen-config.sh
+    $ sh scripts/codegen.sh
     $ go build ./...
     $ sh scripts/make-mix.sh
     $ sh scripts/populate-testdata.sh

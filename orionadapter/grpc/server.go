@@ -7,9 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	iad "istio.io/api/mixer/adapter/model/v1beta1"
-	iauth "istio.io/istio/mixer/template/authorization"
-
+	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	"github.com/orchestracities/boost/orionadapter/handler"
 )
 
@@ -34,12 +32,12 @@ type (
 )
 
 // ask compiler to check types are compatible.
-var _ iauth.HandleAuthorizationServiceServer = &OrionAdapter{}
+var _ od.HandleOrionadapterServiceServer = &OrionAdapter{}
 
-// HandleAuthorization is the auth template hook we use to dispatch the
+// HandleOrionadapter is the template hook we use to dispatch the
 // call to our handler.
-func (s *OrionAdapter) HandleAuthorization(ctx context.Context,
-	r *iauth.HandleAuthorizationRequest) (*iad.CheckResult, error) {
+func (s *OrionAdapter) HandleOrionadapter(ctx context.Context,
+	r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
 	return handler.Authorize(r)
 }
 
@@ -78,6 +76,6 @@ func NewOrionAdapter(port int) (Server, error) {
 	}
 	fmt.Printf("listening on: %v\n", s.Addr())
 	s.server = grpc.NewServer()
-	iauth.RegisterHandleAuthorizationServiceServer(s.server, s)
+	od.RegisterHandleOrionadapterServiceServer(s.server, s)
 	return s, nil
 }

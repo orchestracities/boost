@@ -4,13 +4,13 @@ import (
 	"errors"
 	"strings"
 
-	iauth "istio.io/istio/mixer/template/authorization"
 	ilog "istio.io/pkg/log"
 
-	"github.com/orchestracities/boost/orionadapter/config"
+	"github.com/orchestracities/boost/orionadapter/codegen/config"
+	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 )
 
-func getConfig(r *iauth.HandleAuthorizationRequest) (*config.Params, error) {
+func getConfig(r *od.HandleOrionadapterRequest) (*config.Params, error) {
 	cfg := &config.Params{}
 
 	if r.AdapterConfig == nil {

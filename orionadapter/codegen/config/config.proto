@@ -1,15 +1,13 @@
 syntax = "proto3";
 
 // config for orionadapter
-package adapter.orionadapter.config;
+package orionadapter;
 
-import "gogoproto/gogo.proto";
-
-option go_package="config";
+option go_package = "config";
 
 // config for orionadapter
 message Params {
-  
+
     // header name to check for IDS-DTH token
     string ids_dth_header = 1;
 

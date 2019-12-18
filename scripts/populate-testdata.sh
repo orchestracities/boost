@@ -12,8 +12,9 @@ TESTDATADIR="${ROOTDIR}/testdata"
 source "${ROOTDIR}/scripts/env.sh"
 
 echo "Copying orion adapter config..."
-cp "${ROOTDIR}/orionadapter/config/orionadapter.yaml" "${TESTDATADIR}/"
+cp "${ROOTDIR}/orionadapter/codegen/config/orionadapter.yaml" "${TESTDATADIR}/"
+echo "Copying orion adapter template..."
+cp "${ROOTDIR}/orionadapter/codegen/oriondata/template.yaml" "${TESTDATADIR}/"
 
 echo "Copying mixer config..."
 cp "${MIXER_REPO}/testdata/config/attributes.yaml" "${TESTDATADIR}/"
-cp "${MIXER_REPO}/template/authorization/template.yaml" "${TESTDATADIR}/"
