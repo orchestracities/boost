@@ -10,12 +10,10 @@ TOKENARG=$1
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOTDIR="$(dirname "$SCRIPTPATH")"
-TESTDATADIR="${ROOTDIR}/testdata"
+OUTBINDIR="${ROOTDIR}/_output_/bin"
+TESTDATADIR="${ROOTDIR}/_output_/testdata"
 
 source "${ROOTDIR}/scripts/env.sh"
 
-BIN="${GOPATH}/out/darwin_amd64/release"
-# TODO path will be different on other OSes, figure out a better way of doing
-# this!!
-"${BIN}/mixc" check -s destination.service="svc.cluster.local" \
+"${OUTBINDIR}/mixc" check -s destination.service="svc.cluster.local" \
     --stringmap_attributes "request.headers=ids-dth:${TOKENARG}"

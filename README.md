@@ -15,15 +15,7 @@ in the sink of no return :-)
 * git
 * go >= 1.13
 * add $GOPATH/bin (usually ~/go/bin) to your $PATH
-* protobuf compiler >= 3.10 (brew install protobuf)
-* go protocol buffers plugins:
-    - go get -u github.com/golang/protobuf/protoc-gen-go
-    - go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
-* gogo protocol buffers plugins:
-    - go get github.com/gogo/protobuf/proto
-    - go get github.com/gogo/protobuf/protoc-gen-gogoslick
-    - go get github.com/gogo/protobuf/gogoproto
-* minikube >= 1.5 (or docker k8s?)
+* minikube >= 1.5
 * kubectl >= 1.7
 * docker
 
@@ -41,24 +33,24 @@ For the brave:
     $ sh scripts/populate-testdata.sh
     $ go run orionadapter/main.go 43210
 
+**Note**. `make-mix.sh`. It only runs on MacOS and Linux but it shouldn't
+be impossible to tweak it to make it work on other OSes too.
+
 Now our custom adapter is running and waiting for the Mixer server to
 hook up. Bring up the Mixer server in a new terminal:
 
     $ sh scripts/run-mixer.sh
 
-The script will only run on MacOS but it's trivial to tweak it to make
-it work on other OSes too. Now you're ready to use the Mixer client to
-send an IDS-DTH token to the Mixer server. Open a new terminal and run:
+Now you're ready to use the Mixer client to send an IDS-DTH token to the
+Mixer server. Open a new terminal and run:
 
     $ sh scripts/send-token.sh my.fat.jwt
-
-(This script too only works on MacOS but it's easy to port to other OSes.)
 
 At this point you should be able to see a status OK being returned.
 The adapter checks if the token you send is the same as the one in the
 `ids_dth_expected_token` adapter config field whose value, as you've guessed
-already, is "my.fat.jwt"---edit `testdata/sample_operator_cfg.yaml` to
-change it to something else.
+already, is "my.fat.jwt"---edit `_output_/testdata/sample_operator_cfg.yaml`
+to change it to something else.
 
 If you call the script with a different token:
 
@@ -151,6 +143,7 @@ any other header gets passed on.
 
 Time to plonk in our token-buster baton wielding copper.
 
+    $ sh scripts/populate-deployment.sh
     $ kubectl apply -f deployment/template.yaml
     $ kubectl apply -f deployment/orionadapter.yaml
     $ kubectl apply -f deployment/orion_adapter_service.yaml
@@ -164,7 +157,7 @@ Check the Mixer made friends with our boy:
 
 (You should see: `grpcAdapter	Connected to: orionadapterservice:43210`)
 
-See if we can get still away with an invalid token...
+See if we can still get away with an invalid token...
 
     $ curl -v "$BASE_URL"/headers \
         -H ids-dth:catch.me.copper
