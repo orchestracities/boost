@@ -139,6 +139,11 @@ The `ids-dth` header gets dropped from the HTTP request before it
 gets to the `httpbin` service (see `ingress_routing.yaml`) whereas
 any other header gets passed on.
 
+**Note**. *Header removal*. We disabled this at the moment since it
+gets in the way of token validation---see #11.
+So, much to your disappointment, the above won't work---i.e. the header
+doesn't get dropped.
+
 ##### Deploying the adapter
 
 Time to plonk in our token-buster baton wielding copper.
