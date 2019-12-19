@@ -36,4 +36,8 @@ spec:
  - handler: h1.istio-system
    instances:
    - icheck
+   name: adapter_response
+ responseHeaderOperations:
+  - name: fiware-ids-server-token
+    values: [ adapter_response.output.context_broker_token ]
 ---

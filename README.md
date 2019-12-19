@@ -183,6 +183,30 @@ Well, the request should go through to the target `httpbin` service
 which should reply with the HTTP headers it gets to see and there
 should be no `ids-dth` header in the returned list since our routing
 chops that head(-er) off before sending the request on to `httpbin`.
+(But see note above about header removal!) You should also be able to
+spot a `fiware-ids-server-token` among the response headers: this is
+where we plonk in the IDS server token we generate. What you see on
+your terminal should be similar to:
+
+    HTTP/1.1 200 OK
+    ...
+    fiware-ids-server-token: generated.server.token
+
+    {
+        "headers": {
+            "Accept": "*/*",
+            "Content-Length": "0",
+            "Host": "192.168.64.4:30072",
+            "Ids-Dth": "my.fat.jwt",
+            "User-Agent": "curl/7.64.1",
+            "X-B3-Parentspanid": "aca5010612a10730",
+            "X-B3-Sampled": "1",
+            "X-B3-Spanid": "04ab3dca9ad2cd85",
+            "X-B3-Traceid": "4f8e24520e1dac36aca5010612a10730",
+            "X-Envoy-Internal": "true"
+        }
+    }
+
 Happy days!
 
 ##### Cleaning up

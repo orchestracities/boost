@@ -39,13 +39,25 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 			},
 		}, nil
 	}
+
+	serverToken, err := generateToken()
+	if err != nil {
+		ilog.Errorf("error generating server token: %v\n", err)
+		return &od.HandleOrionadapterResponse{
+			Result: &iad.CheckResult{
+				Status: status.WithUnknown(
+					"Context broker token could not be generated"),
+			},
+		}, nil
+	}
+
 	return &od.HandleOrionadapterResponse{
 		Result: &iad.CheckResult{
 			Status: status.OK,
 			// ValidDuration: 5 * time.Second
 			// i.e. caching? see Keyval
 		},
-		Output: &od.OutputMsg{ContextBrokerToken: "TODO: implement!"},
+		Output: &od.OutputMsg{ContextBrokerToken: serverToken},
 	}, nil
 }
 
@@ -57,4 +69,6 @@ func validateToken(jwt string, expectedToken string) bool {
 	return false
 }
 
-// TODO: remove ids-dht header b/f forwarding msg to orion!
+func generateToken() (string, error) {
+	return "generated.server.token", nil
+}
