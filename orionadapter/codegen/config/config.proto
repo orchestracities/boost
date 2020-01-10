@@ -8,11 +8,13 @@ option go_package = "config";
 // config for orionadapter
 message Params {
 
-    // header name to check for IDS-DTH token
-    string ids_dth_header = 1;
+    // IDSA public key to use for validating client tokens.
+    // TODO: see https://github.com/orchestracities/boost/issues/15
+    string idsa_public_key = 1;
 
-    // expected IDS-DTH token value
-    // TODO: get rid of this after implementing proper token validation
-    string ids_dth_expected_token = 2;
+    // IDSA private key to use for signing server tokens.
+    // TODO: rather store somewhere else, see
+    // - https://github.com/orchestracities/boost/issues/15
+    string idsa_private_key = 2;
 
 }

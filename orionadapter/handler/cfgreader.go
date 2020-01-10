@@ -1,58 +1,56 @@
 package handler
 
 import (
-	"errors"
+	"fmt"
 	"strings"
-
-	ilog "istio.io/pkg/log"
 
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 )
 
+func missingConfigError() error {
+	return fmt.Errorf("request contains no adapter config")
+}
+
+func configReadError(cause error) error {
+	return fmt.Errorf("error reading adapter config: %v", cause)
+}
+
+func missingFieldError(fieldName string) error {
+	return fmt.Errorf("no value for adapter config field: %s", fieldName)
+}
+
 func getConfig(r *od.HandleOrionadapterRequest) (*config.Params, error) {
 	cfg := &config.Params{}
 
 	if r.AdapterConfig == nil {
-		noCfgMsg := "request contains no adapter config!"
-		ilog.Errorf("%s", noCfgMsg)
-		return nil, errors.New(noCfgMsg)
-	}
-	if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
-		ilog.Errorf("error unmarshalling adapter config: %v", err)
-		return nil, err
+		return nil, missingConfigError()
 	}
 
+	if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
+		return nil, configReadError(err)
+	}
 	return cfg, nil
 }
 
-func getIdsDthHeader(p *config.Params, e error) (string, error) {
-	if e != nil {
-		return "", e
+func ensureString(fieldName string, fieldValue string) (string, error) {
+	v := strings.TrimSpace(fieldValue)
+	if len(v) == 0 {
+		return "", missingFieldError(fieldName)
 	}
-
-	headerName := strings.TrimSpace(p.IdsDthHeader)
-	if len(headerName) == 0 {
-		noCfgMsg := "no IDS-DTH header name in adapter config!"
-		ilog.Errorf("%s", noCfgMsg)
-		return "", errors.New(noCfgMsg)
-	}
-
-	return headerName, nil
+	return v, nil
 }
 
-// TODO: get rid of this after implementing proper token validation
-func getIdsDthExpectedToken(p *config.Params, e error) (string, error) {
+func getIdsaPublicKey(p *config.Params, e error) (string, error) {
 	if e != nil {
 		return "", e
 	}
+	return ensureString("IdsaPublicKey", p.IdsaPublicKey)
+}
 
-	expected_token := strings.TrimSpace(p.IdsDthExpectedToken)
-	if len(expected_token) == 0 {
-		noCfgMsg := "no IDS-DTH token in adapter config!"
-		ilog.Errorf("%s", noCfgMsg)
-		return "", errors.New(noCfgMsg)
+func getIdsaPrivateKey(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
 	}
-
-	return expected_token, nil
+	return ensureString("IdsaPrivateKey", p.IdsaPrivateKey)
 }

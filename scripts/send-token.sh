@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-# Use the Mixer client to send an IDS-DTH token to a local Mixer server.
+# Use the Mixer client to send an IDSA header to a local Mixer server.
 # Pass the JWT token as the first argument to this script or call the
-# script with no arguments to send an empty token.
+# script with no arguments to send an IDSA header with an empty token
+# in it.
 
 set -e
 
@@ -15,5 +16,7 @@ TESTDATADIR="${ROOTDIR}/_output_/testdata"
 
 source "${ROOTDIR}/scripts/env.sh"
 
+HEADERARG=$(sh "${ROOTDIR}/scripts/idsa-header-value.sh" "${TOKENARG}")
+
 "${OUTBINDIR}/mixc" check -s destination.service="svc.cluster.local" \
-    --stringmap_attributes "request.headers=ids-dth:${TOKENARG}"
+    --stringmap_attributes "request.headers=ids-dth:${HEADERARG}"
