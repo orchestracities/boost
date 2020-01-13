@@ -28,8 +28,3 @@ spec:
         host: httpbin
         port:
           number: 8000
-      headers:
-        request:
-          remove:
-          - ids-dth
-

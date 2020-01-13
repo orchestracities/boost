@@ -7,13 +7,21 @@ set -e
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOTDIR="$(dirname "$SCRIPTPATH")"
-TESTDATADIR="${ROOTDIR}/testdata"
+TESTDATADIR="${ROOTDIR}/_output_/testdata"
 
 source "${ROOTDIR}/scripts/env.sh"
 
+mkdir -p "${TESTDATADIR}"
+
 echo "Copying orion adapter config..."
-cp "${ROOTDIR}/orionadapter/config/orionadapter.yaml" "${TESTDATADIR}/"
+cp "${ROOTDIR}/orionadapter/codegen/config/orionadapter.yaml" "${TESTDATADIR}/"
+echo "Copying orion adapter template..."
+cp "${ROOTDIR}/orionadapter/codegen/oriondata/template.yaml" "${TESTDATADIR}/"
 
 echo "Copying mixer config..."
 cp "${MIXER_REPO}/testdata/config/attributes.yaml" "${TESTDATADIR}/"
-cp "${MIXER_REPO}/template/authorization/template.yaml" "${TESTDATADIR}/"
+
+echo "Generating operator config..."
+cat "${ROOTDIR}/deployment/sample_operator_cfg.yaml" | \
+    sed 's/orionadapterservice:43210/[::]:43210/g' > \
+    "${TESTDATADIR}/sample_operator_cfg.yaml"

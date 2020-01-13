@@ -15,15 +15,7 @@ in the sink of no return :-)
 * git
 * go >= 1.13
 * add $GOPATH/bin (usually ~/go/bin) to your $PATH
-* protobuf compiler >= 3.10 (brew install protobuf)
-* go protocol buffers plugins:
-    - go get -u github.com/golang/protobuf/protoc-gen-go
-    - go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
-* gogo protocol buffers plugins:
-    - go get github.com/gogo/protobuf/proto
-    - go get github.com/gogo/protobuf/protoc-gen-gogoslick
-    - go get github.com/gogo/protobuf/gogoproto
-* minikube >= 1.5 (or docker k8s?)
+* minikube >= 1.5
 * kubectl >= 1.7
 * docker
 
@@ -35,32 +27,34 @@ customary layout rules.
 
 For the brave:
 
-    $ sh scripts/gen-config.sh
+    $ sh scripts/codegen.sh
     $ go build ./...
     $ sh scripts/make-mix.sh
     $ sh scripts/populate-testdata.sh
     $ go run orionadapter/main.go 43210
+
+**Note**. `make-mix.sh`. It only runs on MacOS and Linux but it shouldn't
+be impossible to tweak it to make it work on other OSes too.
 
 Now our custom adapter is running and waiting for the Mixer server to
 hook up. Bring up the Mixer server in a new terminal:
 
     $ sh scripts/run-mixer.sh
 
-The script will only run on MacOS but it's trivial to tweak it to make
-it work on other OSes too. Now you're ready to use the Mixer client to
-send an IDS-DTH token to the Mixer server. Open a new terminal and run:
+Now you're ready to use the Mixer client to send an IDSA header to the
+Mixer server. Open a new terminal and run:
 
-    $ sh scripts/send-token.sh my.fat.jwt
+    $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
+    $ sh scripts/send-token.sh "${MY_FAT_JWT}"
 
-(This script too only works on MacOS but it's easy to port to other OSes.)
+At this point you should be able to see a status of `OK` being returned.
+Hang on a minute! What's just happened? The script takes a JWT token as
+input, puts it in an IDSA template header and sends it to the Mixer which,
+in turn, passes the IDSA header on to the adapter. On getting the header
+value, the adapter verifies the token's RSA 256 signature using the public
+key in its config---see `_output_/testdata/sample_operator_cfg.yaml`.
 
-At this point you should be able to see a status OK being returned.
-The adapter checks if the token you send is the same as the one in the
-`ids_dth_expected_token` adapter config field whose value, as you've guessed
-already, is "my.fat.jwt"---edit `testdata/sample_operator_cfg.yaml` to
-change it to something else.
-
-If you call the script with a different token:
+If you call the script with an invalid token:
 
     $ sh scripts/send-token.sh this.should.fail
 
@@ -83,7 +77,7 @@ profile. Here's the short version, assuming you've already installed Minikube:
     $ kubectl config use-context minikube
     $ curl -L https://istio.io/downloadIstio | sh -
     $ cd istio-*
-    $ export PATH=$PWD/bin:$PATH
+    $ export PATH="${PWD}/bin:${PATH}"
     # ...ideally you should add the above to your Bash profile.
     $ istioctl manifest apply --set profile=demo
     $ kubectl -n istio-system edit cm istio
@@ -141,16 +135,23 @@ Should we have some fun with HTTP headers?
 
     $ curl -v "$BASE_URL"/headers \
         -H this-wont-be-dropped:cool-bananas! \
-        -H ids-dth:will-be-dropped
+        -H header:will-be-dropped
 
-The `ids-dth` header gets dropped from the HTTP request before it
+The `header` header gets dropped from the HTTP request before it
 gets to the `httpbin` service (see `ingress_routing.yaml`) whereas
-any other header gets passed on.
+any other header gets passed on. Uh? `header` header? Yep, you heard
+right, the IDSA header is aptly called `header` :-)
+
+**Note**. *Header removal*. We disabled this at the moment since it
+gets in the way of token validation---see #11.
+So, much to your disappointment, the above won't work---i.e. the IDSA
+header won't get dropped.
 
 ##### Deploying the adapter
 
 Time to plonk in our token-buster baton wielding copper.
 
+    $ sh scripts/populate-deployment.sh
     $ kubectl apply -f deployment/template.yaml
     $ kubectl apply -f deployment/orionadapter.yaml
     $ kubectl apply -f deployment/orion_adapter_service.yaml
@@ -164,27 +165,59 @@ Check the Mixer made friends with our boy:
 
 (You should see: `grpcAdapter	Connected to: orionadapterservice:43210`)
 
-See if we can get still away with an invalid token...
+See if we can still get away with an invalid token...
 
     $ curl -v "$BASE_URL"/headers \
-        -H ids-dth:catch.me.copper
+        -H header:catch.me.copper
+        #  ^ the IDSA header is actually called "header"
 
 You should get back a fat 403 with a message along the lines of:
 
-    PERMISSION_DENIED:h1.handler.istio-system:Unauthorized: invalid JWT token
+    PERMISSION_DENIED:h1.handler.istio-system:unauthorized: invalid JWT data
 
-Like I said earlier, the adapter checks if the token you send is the same
-as the one in the `ids_dth_expected_token` adapter config field which is
-set to "my.fat.jwt"---see `deployment/sample_operator_cfg.yaml`. What
-happens if we send a valid token then?
+Like I said earlier, the adapter verifies the JWT you send is valid---see
+`deployment/sample_operator_cfg.yaml`. What happens if we send a valid
+token then? Here's a valid JWT signed with the private key in the config.
+
+    $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
+
+Now we can use this convenience script to stick it into an IDSA header:
+
+    $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${MY_FAT_JWT}")
+
+and send the header with
 
     $ curl -v "$BASE_URL"/headers \
-        -H ids-dth:my.fat.jwt
+        -H "header:${HEADER_VALUE}"
 
-Well, the request should go through to the target `httpbin` service
+The request should go through to the target `httpbin` service
 which should reply with the HTTP headers it gets to see and there
-should be no `ids-dth` header in the returned list since our routing
+should be no IDSA header in the returned list since our routing
 chops that head(-er) off before sending the request on to `httpbin`.
+(But see note above about header removal!) You should also be able to
+spot a `fiware-ids-server-token` among the response headers: this is
+where we plonk in the IDS server token we generate. What you see on
+your terminal should be similar to:
+
+    HTTP/1.1 200 OK
+    ...
+    fiware-ids-server-token: generated.server.token
+
+    {
+        "headers": {
+            "Accept": "*/*",
+            "Content-Length": "0",
+            "Host": "192.168.64.4:30072",
+            "Header": "ewoJIkB0eXBlIjogIm...(same as $HEADER_VALUE)...",
+            "User-Agent": "curl/7.64.1",
+            "X-B3-Parentspanid": "aca5010612a10730",
+            "X-B3-Sampled": "1",
+            "X-B3-Spanid": "04ab3dca9ad2cd85",
+            "X-B3-Traceid": "4f8e24520e1dac36aca5010612a10730",
+            "X-Envoy-Internal": "true"
+        }
+    }
+
 Happy days!
 
 ##### Cleaning up
@@ -208,9 +241,9 @@ redo everything from a clean slate!
 ### Current status
 
 * adapter scaffolding (done)
-* token validation against configured value (done, see `validateToken`)
+* token validation (done)
 * dropping of token header before forwarding message to Orion (done)
-* response token header injection using a configured token value (in progress)
+* response token header injection (in progress)
 * K8s + Istio + adapter local and cloud deployment (done)
 * mutual TLS (almost there!)
 * Istio gateway / virtual service to handle IDS / Fiware message translation

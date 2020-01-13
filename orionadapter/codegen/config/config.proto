@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+// config for orionadapter
+package orionadapter;
+
+option go_package = "config";
+
+// config for orionadapter
+message Params {
+
+    // IDSA public key to use for validating client tokens.
+    // TODO: see https://github.com/orchestracities/boost/issues/15
+    string idsa_public_key = 1;
+
+    // IDSA private key to use for signing server tokens.
+    // TODO: rather store somewhere else, see
+    // - https://github.com/orchestracities/boost/issues/15
+    string idsa_private_key = 2;
+
+}

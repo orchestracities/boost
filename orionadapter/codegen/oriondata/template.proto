@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+// Template for orionadapter.
+package orionadapter;
+
+import "mixer/adapter/model/v1beta1/extensions.proto";
+
+option (istio.mixer.adapter.model.v1beta1.template_variety) = TEMPLATE_VARIETY_CHECK_WITH_OUTPUT;
+
+// Input template
+message Template {
+    // The IDS-DTH token, i.e. the content of the IDS-DTH HTTP request header.
+    string client_token = 1;
+}
+
+// Output template
+message OutputTemplate {
+    // Generated IDS-DTH token to be added to Orion's response headers.
+    string context_broker_token = 1;
+}

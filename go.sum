@@ -91,6 +91,7 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/daviddengcn/go-colortext v0.0.0-20160507010035-511bcaf42ccd/go.mod h1:dv4zxwHi5C/8AeI+4gX4dCWOIvNi7I6JCSX0HvlKPgE=
 github.com/dchest/siphash v1.1.0/go.mod h1:q+IRvb2gOSrUnYoPqHiyHXS0FOBBOdl6tONBlVnOnt4=
 github.com/denisenkom/go-mssqldb v0.0.0-20190423183735-731ef375ac02/go.mod h1:zAg7JM8CkOJ43xKXIj7eRO9kmWm/TW578qo+oDO6tuM=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/docker/distribution v2.7.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
@@ -649,6 +650,8 @@ istio.io/istio v0.0.0-20191121040522-ed45dfa4bbbd h1:3Cau7zodf4az1dAui/Zzyn7A+Lq
 istio.io/istio v0.0.0-20191121202423-9eee14d60c6c h1:jJRErfAUEqZSlLtWBDU5PzUpeZpW5QEAy1TNDWU9xns=
 istio.io/istio v0.0.0-20191124030738-4948416d0fb2 h1:uOfeWJdjFt/Za8TLZxAUCRadG1H1tnW20zT1tNjwY8E=
 istio.io/istio v0.0.0-20191203054312-59a62ad84b7e h1:I4Po6pnwKwgm0PvwD0w5NPiKpGaKeAkUeczwuhRNbJE=
+istio.io/istio v0.0.0-20191204062612-be601ea5f21e h1:mH/HSBzxcFFQkyJau7ll+ZbIRChyYZb/YmzvauyhhSA=
+istio.io/istio v0.0.0-20191216035848-642550924d69 h1:7XSFilFyW3sVXW1HGX163sLMYU9WI5WdFnYsIl5q/qQ=
 istio.io/operator v0.0.0-20191116191844-787ab3bb075b/go.mod h1:aAkwaj5S0Yl3v762WBG2fz/cOP/Zd46LadvD7PQosuI=
 istio.io/pkg v0.0.0-20191029184635-5c2f5ef63692/go.mod h1:O7Uqtzc1w7+NiEV2TUeO2yPoR+4GlwlDgSocYZMjBfs=
 istio.io/pkg v0.0.0-20191113122952-4f521de9c8ca h1:WmfXcc/AU/+r7CULqKx53YKd6I/iMe1WOYhuspjoJDM=

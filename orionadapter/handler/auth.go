@@ -1,49 +1,99 @@
 package handler
 
 import (
+	"fmt"
+
 	iad "istio.io/api/mixer/adapter/model/v1beta1"
 	"istio.io/istio/mixer/pkg/status"
-	iauth "istio.io/istio/mixer/template/authorization"
 	ilog "istio.io/pkg/log"
+
+	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
+	token "github.com/orchestracities/boost/orionadapter/sec"
 )
 
 // Authorize tells the Mixer if it should reject the incoming request.
 // We go ahead with the request only if it contains a valid IDS-DTH
 // token.
-func Authorize(r *iauth.HandleAuthorizationRequest) (*iad.CheckResult, error) {
+func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
 	ilog.Infof("auth request: %v\n", *r)
 
 	params, err := getConfig(r)
-	headerName, err := getIdsDthHeader(params, err)
-	if len(headerName) == 0 {
-		return &iad.CheckResult{
-			Status: status.WithPermissionDenied(
-				"Unauthorized: no IDS-DTH header configured"),
-		}, nil
+	pubKeyPemRep, err := getIdsaPublicKey(params, err)
+	if err != nil {
+		ilog.Errorf("%v", err)
+		return configError(), nil
 	}
 
-	props := toMap(r.Instance.Subject.Properties)
-	ilog.Infof("subject props: %v", props)
+	// props := toMap(r.Instance.Subject.Properties)
+	// ilog.Infof("subject props: %v", props)
 
-	headerValue := getStringValue(props, headerName)
-	expectedToken, err := getIdsDthExpectedToken(params, nil)
-	if !validateToken(headerValue, expectedToken) {
-		return &iad.CheckResult{
-			Status: status.WithPermissionDenied(
-				"Unauthorized: invalid JWT token"),
-		}, nil
+	// headerValue := getStringValue(props, headerName)
+	err = validateToken(pubKeyPemRep, r.Instance.ClientToken)
+	if err != nil {
+		ilog.Infof("token validation failed: %v", err)
+		return invalidJWTError(), nil
 	}
-	return &iad.CheckResult{
-		Status: status.OK,
-	}, nil
+
+	serverToken, err := generateToken()
+	if err != nil {
+		ilog.Errorf("error generating server token: %v\n", err)
+		return tokenGenError(), nil
+	}
+
+	return success(serverToken), nil
 }
 
-// TODO: port ballerina code and get rid of expected_token param
-func validateToken(jwt string, expectedToken string) bool {
-	if jwt == expectedToken {
-		return true
+func validateToken(pubKey string, headerValue string) error {
+	jwt, err := token.ReadClientToken(headerValue)
+	if err != nil {
+		return err
 	}
-	return false
+	return token.Validate(pubKey, jwt)
 }
 
-// TODO: remove ids-dht header b/f forwarding msg to orion!
+func generateToken() (string, error) {
+	return "generated.server.token", nil
+}
+
+// response generation boilerplate
+
+func success(serverToken string) *od.HandleOrionadapterResponse {
+	return &od.HandleOrionadapterResponse{
+		Result: &iad.CheckResult{
+			Status: status.OK,
+			// ValidDuration: 5 * time.Second
+			// i.e. caching? see Keyval
+		},
+		Output: &od.OutputMsg{ContextBrokerToken: serverToken},
+	}
+}
+
+func permissionDeniedResponse(reason string) *od.HandleOrionadapterResponse {
+	msg := fmt.Sprintf("unauthorized: %s", reason)
+	return &od.HandleOrionadapterResponse{
+		Result: &iad.CheckResult{
+			Status: status.WithPermissionDenied(msg),
+		},
+	}
+}
+
+func adapterErrorResponse(reason string) *od.HandleOrionadapterResponse {
+	msg := fmt.Sprintf("adapter error: %s", reason)
+	return &od.HandleOrionadapterResponse{
+		Result: &iad.CheckResult{
+			Status: status.WithUnknown(msg),
+		},
+	}
+}
+
+func invalidJWTError() *od.HandleOrionadapterResponse {
+	return permissionDeniedResponse("invalid JWT data")
+}
+
+func configError() *od.HandleOrionadapterResponse {
+	return adapterErrorResponse("invalid configuration")
+}
+
+func tokenGenError() *od.HandleOrionadapterResponse {
+	return adapterErrorResponse("context broker token could not be generated")
+}

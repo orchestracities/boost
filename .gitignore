@@ -1,0 +1,25 @@
+#
+# Mixer codegen artifacts
+#
+orionadapter/codegen/config/config.pb.go
+orionadapter/codegen/config/config.proto_descriptor
+orionadapter/codegen/config/orionadapter.pb.html
+orionadapter/codegen/config/orionadapter.yaml
+orionadapter/codegen/oriondata/orionadapter.pb.html
+orionadapter/codegen/oriondata/template.yaml
+orionadapter/codegen/oriondata/template_handler.gen.go
+orionadapter/codegen/oriondata/template_handler_service.descriptor_set
+orionadapter/codegen/oriondata/template_handler_service.pb.go
+orionadapter/codegen/oriondata/template_handler_service.proto
+orionadapter/codegen/oriondata/template_proto.descriptor_set
+
+#
+# Files we duplicate out of convenience
+#
+deployment/orionadapter.yaml
+deployment/template.yaml
+
+#
+# Our output dir
+#
+_output_

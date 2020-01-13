@@ -25,9 +25,15 @@ pushd "${ROOTDIR}" && \
     docker build -t boost/orionadapter/codegen \
                  -f container/codegen.dockerfile .
 
+echo "Generating adapter template artifacts."
+docker run -t -i --rm \
+    --mount type=bind,source="${ADAPTERDIR}",target=/work/mixer/adapter/orionadapter \
+    boost/orionadapter/codegen \
+    -t mixer/adapter/orionadapter/codegen/oriondata/template.proto
+
 echo "Generating adapter config artifacts."
 docker run -t -i --rm \
     --mount type=bind,source="${ADAPTERDIR}",target=/work/mixer/adapter/orionadapter \
     boost/orionadapter/codegen \
-    -a mixer/adapter/orionadapter/config/config.proto \
-    -x "-s=false -n orionadapter -t authorization"
+    -a mixer/adapter/orionadapter/codegen/config/config.proto \
+    -x "-s=false -n orionadapter -t oriondata"
