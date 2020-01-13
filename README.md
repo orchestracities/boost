@@ -135,16 +135,17 @@ Should we have some fun with HTTP headers?
 
     $ curl -v "$BASE_URL"/headers \
         -H this-wont-be-dropped:cool-bananas! \
-        -H ids-dth:will-be-dropped
+        -H header:will-be-dropped
 
-The `ids-dth` header gets dropped from the HTTP request before it
+The `header` header gets dropped from the HTTP request before it
 gets to the `httpbin` service (see `ingress_routing.yaml`) whereas
-any other header gets passed on.
+any other header gets passed on. Uh? `header` header? Yep, you heard
+right, the IDSA header is aptly called `header` :-)
 
 **Note**. *Header removal*. We disabled this at the moment since it
 gets in the way of token validation---see #11.
-So, much to your disappointment, the above won't work---i.e. the header
-doesn't get dropped.
+So, much to your disappointment, the above won't work---i.e. the IDSA
+header won't get dropped.
 
 ##### Deploying the adapter
 
@@ -167,7 +168,8 @@ Check the Mixer made friends with our boy:
 See if we can still get away with an invalid token...
 
     $ curl -v "$BASE_URL"/headers \
-        -H ids-dth:catch.me.copper
+        -H header:catch.me.copper
+        #  ^ the IDSA header is actually called "header"
 
 You should get back a fat 403 with a message along the lines of:
 
@@ -186,11 +188,11 @@ Now we can use this convenience script to stick it into an IDSA header:
 and send the header with
 
     $ curl -v "$BASE_URL"/headers \
-        -H "ids-dth:${HEADER_VALUE}"
+        -H "header:${HEADER_VALUE}"
 
 The request should go through to the target `httpbin` service
 which should reply with the HTTP headers it gets to see and there
-should be no `ids-dth` header in the returned list since our routing
+should be no IDSA header in the returned list since our routing
 chops that head(-er) off before sending the request on to `httpbin`.
 (But see note above about header removal!) You should also be able to
 spot a `fiware-ids-server-token` among the response headers: this is
@@ -206,7 +208,7 @@ your terminal should be similar to:
             "Accept": "*/*",
             "Content-Length": "0",
             "Host": "192.168.64.4:30072",
-            "Ids-Dth": "ewoJIkB0eXBlIjogIm...",
+            "Header": "ewoJIkB0eXBlIjogIm...(same as $HEADER_VALUE)...",
             "User-Agent": "curl/7.64.1",
             "X-B3-Parentspanid": "aca5010612a10730",
             "X-B3-Sampled": "1",
@@ -239,9 +241,9 @@ redo everything from a clean slate!
 ### Current status
 
 * adapter scaffolding (done)
-* token validation against configured value (done, see `validateToken`)
+* token validation (done)
 * dropping of token header before forwarding message to Orion (done)
-* response token header injection using a configured token value (in progress)
+* response token header injection (in progress)
 * K8s + Istio + adapter local and cloud deployment (done)
 * mutual TLS (almost there!)
 * Istio gateway / virtual service to handle IDS / Fiware message translation

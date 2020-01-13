@@ -59,7 +59,7 @@ metadata:
 spec:
  template: oriondata
  params:
-   client_token: request.headers["ids-dth"]
+   client_token: request.headers["header"]
 ---
 
 # rule to dispatch to orion handler
