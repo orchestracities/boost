@@ -140,3 +140,11 @@ func TestRequestTokenAudClaim(t *testing.T) {
 		}
 	}
 }
+
+func TestIdentityTokenErrorWhenCantBuildClient(t *testing.T) {
+	r := &DapsIDRequest{}
+	token, err := r.IdentityToken()
+	if err == nil {
+		t.Errorf("shouldn't have discarded unusable DAPS client: %s", token)
+	}
+}

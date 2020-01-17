@@ -9,11 +9,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-func invalidPvtKeyError(cause error) *jwt.ValidationError {
-	msg := fmt.Sprintf("invalid private key: %v", cause)
-	return jwt.NewValidationError(msg, jwt.ValidationErrorUnverifiable)
-}
-
 func toRsaPvtKey(pemRep string) (*rsa.PrivateKey, error) {
 	keyBytes := []byte(pemRep)
 	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyBytes)
@@ -85,27 +80,54 @@ func (r *DapsIDRequest) IdentityToken() (string, error) {
 	daps, err := NewDapsClient(r.serverHost, r.privateKey,
 		r.connectorCertificate, r.serverCertificate)
 	if err != nil {
-		return "", err
+		return "", dapsClientInstantiationError(err)
 	}
 
 	reqToken, err := r.requestToken()
 	if err != nil {
-		return "", err
+		return "", requestTokenError(err)
 	}
 
 	resData, err := daps.PostForm("/token", buildOauthRequest(reqToken), true)
 	if err != nil {
-		return "", err
+		return "", dapsRequestError(err)
 	}
 
 	resToken := &oauthTokenResponse{}
 	err = resData.AsJSON(resToken)
 	if err != nil {
-		return "", err
+		return "", dapsDeserializationError(err)
 	}
 
 	if len(resToken.JwtData) == 0 {
-		return "", fmt.Errorf("DAPS returned an empty token")
+		return "", dapsEmptyTokenError()
 	}
 	return resToken.JwtData, nil
+}
+
+// errors boilerplate
+
+func invalidPvtKeyError(cause error) *jwt.ValidationError {
+	msg := fmt.Sprintf("invalid private key: %v", cause)
+	return jwt.NewValidationError(msg, jwt.ValidationErrorUnverifiable)
+}
+
+func dapsClientInstantiationError(cause error) error {
+	return fmt.Errorf("can't instantiate DAPS client: %v", cause)
+}
+
+func requestTokenError(cause error) error {
+	return fmt.Errorf("can't generate DAPS request token: %v", cause)
+}
+
+func dapsRequestError(cause error) error {
+	return fmt.Errorf("DAPS request failed: %v", cause)
+}
+
+func dapsDeserializationError(cause error) error {
+	return fmt.Errorf("can't parse DAPS response JSON: %v", cause)
+}
+
+func dapsEmptyTokenError() error {
+	return fmt.Errorf("DAPS returned an empty token")
 }

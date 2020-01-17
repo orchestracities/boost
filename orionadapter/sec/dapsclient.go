@@ -47,7 +47,7 @@ func NewDapsClient(host string, clientPvtKey string, clientCert string,
 
 	svrCerts := x509.NewCertPool()
 	if !svrCerts.AppendCertsFromPEM([]byte(serverCert)) {
-		return &DapsClient{}, fmt.Errorf("can't decode server certificate")
+		return &DapsClient{}, serverCertDecodingError()
 	}
 
 	return &DapsClient{
@@ -71,7 +71,7 @@ func checkSuccess(r *http.Response, err error) error {
 		return err
 	}
 	if 400 <= r.StatusCode {
-		return fmt.Errorf("http error: %s", r.Status)
+		return httpError(r.Status)
 	}
 	if 200 <= r.StatusCode && r.StatusCode <= 204 {
 		return nil
@@ -79,7 +79,7 @@ func checkSuccess(r *http.Response, err error) error {
 	// 3xx should be handled by http client under the bonnet so we
 	// shouldn't get to see them. Any other code (e.g. 100, 205,...)
 	// we can't handle we reject for now.
-	return fmt.Errorf("unexpected http response: %s", r.Status)
+	return unexpectedHTTPError(r.Status)
 }
 
 func checkHasContent(r *http.Response, err error) error {
@@ -87,7 +87,7 @@ func checkHasContent(r *http.Response, err error) error {
 		return err
 	}
 	if r.ContentLength == 0 {
-		return fmt.Errorf("server returned no content: %s", r.Status)
+		return noContentError(r.Status)
 	}
 	return nil
 }
@@ -152,4 +152,22 @@ func (c *DapsClient) PostForm(urlPath string, data url.Values,
 	url := c.base.join(urlPath)
 	r, err := c.conn.PostForm(url, data)
 	return handleResponse(ensureResponseBody, r, err)
+}
+
+// errors boilerplate
+
+func serverCertDecodingError() error {
+	return fmt.Errorf("can't decode server certificate")
+}
+
+func httpError(statusLine string) error {
+	return fmt.Errorf("http error: %s", statusLine)
+}
+
+func unexpectedHTTPError(statusLine string) error {
+	return fmt.Errorf("unexpected http response: %s", statusLine)
+}
+
+func noContentError(statusLine string) error {
+	return fmt.Errorf("server returned no content: %s", statusLine)
 }
