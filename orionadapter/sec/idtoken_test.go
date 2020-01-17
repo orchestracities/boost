@@ -1,10 +1,12 @@
 package token
 
 import (
-	"github.com/dgrijalva/jwt-go"
+	"fmt"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 // NOTE. We'll use pvt/pub key pair declared in "tokenval_test.go".
@@ -146,5 +148,12 @@ func TestIdentityTokenErrorWhenCantBuildClient(t *testing.T) {
 	token, err := r.IdentityToken()
 	if err == nil {
 		t.Errorf("shouldn't have discarded unusable DAPS client: %s", token)
+	}
+}
+
+func TestRequestTokenErrorBuilding(t *testing.T) {
+	cause := fmt.Errorf("whoa")
+	if err := requestTokenError(cause); err == nil {
+		t.Errorf("should've build an error")
 	}
 }

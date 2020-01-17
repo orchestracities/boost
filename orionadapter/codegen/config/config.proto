@@ -5,6 +5,30 @@ package orionadapter;
 
 option go_package = "config";
 
+// config for getting an ID token from DAPS.
+message Daps {
+    // identifies the connector within DAPS/IDS; usually a UUID.
+    string connector_id = 1;
+    // e.g. "https://consumerconnector.fiware.org"
+    string connector_audience = 2;
+    // how many seconds from now before the JWT in the request expires.
+    uint64 seconds_before_expiry = 3;
+    // connector's own RSA private key in PEM format.
+    // TODO: rather store somewhere else, see
+    // - https://github.com/orchestracities/boost/issues/15
+    string private_key = 4;
+    // connector's own certificate to authenticate with DAPS; paired to
+    // the private key and in PEM format.
+    // TODO: see https://github.com/orchestracities/boost/issues/15
+    string connector_certificate = 5;
+    // DAPS server certificate, in PEM format, the connector should use
+    // to authenticate the server.
+    // TODO: see https://github.com/orchestracities/boost/issues/15
+    string server_certificate = 6;
+    // DAPS server host or host:port.
+    string server_host = 7;
+}
+
 // config for orionadapter
 message Params {
 
@@ -17,4 +41,10 @@ message Params {
     // - https://github.com/orchestracities/boost/issues/15
     string idsa_private_key = 2;
 
+    // config for getting an ID token from DAPS.
+    Daps daps = 3;
+
+    // template for the JSON holding the ID token the connector got
+    // from DAPS.
+    string id_token_json_template = 4;
 }
