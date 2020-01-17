@@ -99,13 +99,13 @@ func doIDInteractionWith(h MsgHandler) (
 	got string, clientErr, shutdownErr, svrErr error) {
 
 	daps := &DapsIDRequest{
-		connectorID:          "4e16f007-d959-4eb2-b47d-78dd0c4eab0e",
-		connectorAudience:    "https://consumerconnector.fiware.org",
-		secondsBeforeExpiry:  3600,
-		privateKey:           testCertPvtKey,
-		connectorCertificate: testCert,
-		serverCertificate:    testCert,
-		serverHost:           "localhost" + serverAddr,
+		ConnectorID:          "4e16f007-d959-4eb2-b47d-78dd0c4eab0e",
+		ConnectorAudience:    "https://consumerconnector.fiware.org",
+		SecondsBeforeExpiry:  3600,
+		PrivateKey:           testCertPvtKey,
+		ConnectorCertificate: testCert,
+		ServerCertificate:    testCert,
+		ServerHost:           "localhost" + serverAddr,
 	}
 
 	dispatcher := &Dispatcher{handle: h}

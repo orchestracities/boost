@@ -21,21 +21,21 @@ func toRsaPvtKey(pemRep string) (*rsa.PrivateKey, error) {
 // DapsIDRequest holds the data needed to request an ID token from DAPS.
 type DapsIDRequest struct {
 	// identifies the connector within DAPS/IDS; usually a UUID.
-	connectorID string
+	ConnectorID string
 	// e.g. "https://consumerconnector.fiware.org"
-	connectorAudience string
+	ConnectorAudience string
 	// how many seconds from now before the JWT in the request expires.
-	secondsBeforeExpiry uint
+	SecondsBeforeExpiry uint32
 	// connector's own RSA private key in PEM format.
-	privateKey string
+	PrivateKey string
 	// connector's own certificate to authenticate with DAPS; paired to
 	// the private key and in PEM format.
-	connectorCertificate string
+	ConnectorCertificate string
 	// DAPS server certificate, in PEM format, the connector should use
 	// to authenticate the server.
-	serverCertificate string
+	ServerCertificate string
 	// DAPS server host or host:port.
-	serverHost string
+	ServerHost string
 }
 
 func (r *DapsIDRequest) standardClaims() *jwt.StandardClaims {
@@ -43,16 +43,16 @@ func (r *DapsIDRequest) standardClaims() *jwt.StandardClaims {
 	return &jwt.StandardClaims{
 		IssuedAt:  now,
 		NotBefore: now,
-		ExpiresAt: now + int64(r.secondsBeforeExpiry),
-		Subject:   r.connectorID,
-		Issuer:    r.connectorID,
-		Audience:  r.connectorAudience,
+		ExpiresAt: now + int64(r.SecondsBeforeExpiry),
+		Subject:   r.ConnectorID,
+		Issuer:    r.ConnectorID,
+		Audience:  r.ConnectorAudience,
 	}
 }
 
 // build JWT to use in request to get an ID token from DAPS.
 func (r *DapsIDRequest) requestToken() (string, error) {
-	key, err := toRsaPvtKey(r.privateKey)
+	key, err := toRsaPvtKey(r.PrivateKey)
 	if err != nil {
 		return "", err
 	}
@@ -77,8 +77,8 @@ type oauthTokenResponse struct {
 
 // IdentityToken requests an ID token for the connector from DAPS.
 func (r *DapsIDRequest) IdentityToken() (string, error) {
-	daps, err := NewDapsClient(r.serverHost, r.privateKey,
-		r.connectorCertificate, r.serverCertificate)
+	daps, err := NewDapsClient(r.ServerHost, r.PrivateKey,
+		r.ConnectorCertificate, r.ServerCertificate)
 	if err != nil {
 		return "", dapsClientInstantiationError(err)
 	}

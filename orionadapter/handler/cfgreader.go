@@ -76,7 +76,7 @@ func getDapsConnectorAudience(p *config.Params, e error) (string, error) {
 	return ensureString("Daps.ConnectorAudience", getDaps(p).ConnectorAudience)
 }
 
-func getDapsSecondsBeforeExpiry(p *config.Params, e error) (uint64, error) {
+func getDapsSecondsBeforeExpiry(p *config.Params, e error) (uint32, error) {
 	if e != nil {
 		return 0, e
 	}

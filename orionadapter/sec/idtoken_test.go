@@ -29,8 +29,8 @@ func buildAndDecodeRequestTokenPayload(r *DapsIDRequest) (*jwt.StandardClaims, e
 
 func TestCanBuildValidRequestToken(t *testing.T) {
 	r := &DapsIDRequest{
-		secondsBeforeExpiry: 10,
-		privateKey:          privateKey,
+		SecondsBeforeExpiry: 10,
+		PrivateKey:          privateKey,
 	}
 	requestJWT, err := r.requestToken()
 	if err != nil {
@@ -43,7 +43,7 @@ func TestCanBuildValidRequestToken(t *testing.T) {
 
 func TestCantBuildRequestTokenWithoutPvtKey(t *testing.T) {
 	r := &DapsIDRequest{
-		secondsBeforeExpiry: 10,
+		SecondsBeforeExpiry: 10,
 	}
 	_, err := r.requestToken()
 	if err == nil {
@@ -64,24 +64,24 @@ func assertClose(t *testing.T, a int64, b int64) {
 }
 
 var requestTokenExpClaim = []DapsIDRequest{
-	{secondsBeforeExpiry: 0}, {secondsBeforeExpiry: 10},
-	{secondsBeforeExpiry: 20}, {secondsBeforeExpiry: 3600},
+	{SecondsBeforeExpiry: 0}, {SecondsBeforeExpiry: 10},
+	{SecondsBeforeExpiry: 20}, {SecondsBeforeExpiry: 3600},
 }
 
 func TestRequestTokenExpClaim(t *testing.T) {
 	for k, r := range requestTokenExpClaim {
-		r.privateKey = privateKey
+		r.PrivateKey = privateKey
 		claims, err := buildAndDecodeRequestTokenPayload(&r)
 		if err != nil {
 			t.Errorf("[%d] should've built a JWT: %v", k, err)
 		}
 		now := time.Now().Unix()
-		assertClose(t, now+int64(r.secondsBeforeExpiry), claims.ExpiresAt)
+		assertClose(t, now+int64(r.SecondsBeforeExpiry), claims.ExpiresAt)
 	}
 }
 
 func TestRequestTokenIssClaim(t *testing.T) {
-	r := &DapsIDRequest{privateKey: privateKey}
+	r := &DapsIDRequest{PrivateKey: privateKey}
 	claims, err := buildAndDecodeRequestTokenPayload(r)
 	if err != nil {
 		t.Errorf("should've built a JWT: %v", err)
@@ -91,7 +91,7 @@ func TestRequestTokenIssClaim(t *testing.T) {
 }
 
 func TestRequestTokenNbfClaim(t *testing.T) {
-	r := &DapsIDRequest{privateKey: privateKey}
+	r := &DapsIDRequest{PrivateKey: privateKey}
 	claims, err := buildAndDecodeRequestTokenPayload(r)
 	if err != nil {
 		t.Errorf("should've built a JWT: %v", err)
@@ -101,44 +101,44 @@ func TestRequestTokenNbfClaim(t *testing.T) {
 }
 
 var requestTokenIssAndSubClaims = []DapsIDRequest{
-	{}, {connectorID: ""}, {connectorID: " "}, {connectorID: "x"},
-	{connectorID: "2d80dc4e-7dfe-449c-8e3a-ce19b41685c3"},
+	{}, {ConnectorID: ""}, {ConnectorID: " "}, {ConnectorID: "x"},
+	{ConnectorID: "2d80dc4e-7dfe-449c-8e3a-ce19b41685c3"},
 }
 
 func TestRequestTokenIssAndSubClaims(t *testing.T) {
 	for k, r := range requestTokenIssAndSubClaims {
-		r.privateKey = privateKey
+		r.PrivateKey = privateKey
 		claims, err := buildAndDecodeRequestTokenPayload(&r)
 		if err != nil {
 			t.Errorf("[%d] should've built a JWT: %v", k, err)
 		}
-		if r.connectorID != claims.Issuer {
+		if r.ConnectorID != claims.Issuer {
 			t.Errorf("[%d] want iss=%s; got: %s",
-				k, r.connectorID, claims.Issuer)
+				k, r.ConnectorID, claims.Issuer)
 		}
-		if r.connectorID != claims.Subject {
+		if r.ConnectorID != claims.Subject {
 			t.Errorf("[%d] want sub=%s; got: %s",
-				k, r.connectorID, claims.Subject)
+				k, r.ConnectorID, claims.Subject)
 		}
 	}
 }
 
 var requestTokenAudClaim = []DapsIDRequest{
-	{}, {connectorAudience: ""}, {connectorAudience: " "},
-	{connectorAudience: "x"},
-	{connectorAudience: "https://consumerconnector.fiware.org"},
+	{}, {ConnectorAudience: ""}, {ConnectorAudience: " "},
+	{ConnectorAudience: "x"},
+	{ConnectorAudience: "https://consumerconnector.fiware.org"},
 }
 
 func TestRequestTokenAudClaim(t *testing.T) {
 	for k, r := range requestTokenAudClaim {
-		r.privateKey = privateKey
+		r.PrivateKey = privateKey
 		claims, err := buildAndDecodeRequestTokenPayload(&r)
 		if err != nil {
 			t.Errorf("[%d] should've built a JWT: %v", k, err)
 		}
-		if r.connectorAudience != claims.Audience {
+		if r.ConnectorAudience != claims.Audience {
 			t.Errorf("[%d] want iss=%s; got: %s",
-				k, r.connectorAudience, claims.Audience)
+				k, r.ConnectorAudience, claims.Audience)
 		}
 	}
 }

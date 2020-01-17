@@ -12,7 +12,7 @@ message Daps {
     // e.g. "https://consumerconnector.fiware.org"
     string connector_audience = 2;
     // how many seconds from now before the JWT in the request expires.
-    uint64 seconds_before_expiry = 3;
+    uint32 seconds_before_expiry = 3;
     // connector's own RSA private key in PEM format.
     // TODO: rather store somewhere else, see
     // - https://github.com/orchestracities/boost/issues/15
