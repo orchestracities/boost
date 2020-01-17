@@ -3,12 +3,12 @@ package token
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"testing"
+
+	"github.com/orchestracities/boost/mockdaps/https"
 )
 
 const accessToken = "you.fat.jwt"
@@ -30,49 +30,13 @@ const serverAddr = ":44300"
 // this? I know, I'm a lazy bastard, I should've used different certs for
 // client and server...
 
-func serverTLSConfig() (*tls.Config, error) {
-	// client cert
-	caCertPool := x509.NewCertPool()
-	if !caCertPool.AppendCertsFromPEM([]byte(testCert)) {
-		return nil, fmt.Errorf("can't add client cert to server pool")
+func mTLSConfig() (*tls.Config, error) {
+	m := &https.MutualTLSConfig{
+		ClientCerts:      []https.PemData{testCert},
+		ServerCert:       testCert,
+		ServerCertPvtKey: testCertPvtKey,
 	}
-
-	// server cert - same as client's, out of convenience
-	srvCert, err := tls.X509KeyPair([]byte(testCert), []byte(testCertPvtKey))
-	if err != nil {
-		return nil, err
-	}
-
-	tlsConfig := &tls.Config{
-		ClientCAs:    caCertPool,
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: []tls.Certificate{srvCert},
-	}
-	tlsConfig.BuildNameToCertificate()
-
-	return tlsConfig, nil
-}
-
-func enterServerLoop(srv *http.Server, ctl chan error) {
-	config, err := serverTLSConfig()
-	if err != nil {
-		ctl <- err
-		return
-	}
-
-	tcpSocket, err := net.Listen("tcp", srv.Addr)
-	if err != nil {
-		ctl <- err
-		return
-	}
-	tlsSocket := tls.NewListener(tcpSocket, config)
-	if err != nil {
-		ctl <- err
-		return
-	}
-
-	defer tcpSocket.Close()
-	ctl <- srv.Serve(tlsSocket)
+	return m.ServerTLSConfig()
 }
 
 type MsgHandler func(w http.ResponseWriter, r *http.Request)
@@ -85,14 +49,15 @@ func (d *Dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func startServer(d *Dispatcher) (*http.Server, chan error) {
-	ctl := make(chan error)
+	config, err := mTLSConfig()
+	if err != nil {
+		return nil, nil
+	}
 	server := &http.Server{
 		Addr:    serverAddr,
 		Handler: d,
 	}
-	go enterServerLoop(server, ctl)
-
-	return server, ctl
+	return server, https.Run(server, config)
 }
 
 func doIDInteractionWith(h MsgHandler) (

@@ -1,0 +1,68 @@
+package daps
+
+// AccessToken is the hard-coded token we return on each call.
+const AccessToken = "whoopsie.dapsie.jwt"
+
+// ExpiresIn is the hard-coded token expiry we return on each call.
+const ExpiresIn = 3600
+
+// Below cert and associated private key got generated with:
+//
+// openssl req -newkey rsa:2048 \
+//   -new -nodes -x509 \
+//   -days 3650 \
+//   -out cert.pem \
+//   -keyout key.pem \
+//   -subj "/C=ZA/ST=Western Cape/L=Cape Town/O=Rusks Ltd/OU=Ma/CN=localhost"
+
+// TestCert see above.
+const TestCert = `-----BEGIN CERTIFICATE-----
+MIIDVjCCAj4CCQDp28MTQXuiwjANBgkqhkiG9w0BAQsFADBtMQswCQYDVQQGEwJa
+QTEVMBMGA1UECAwMV2VzdGVybiBDYXBlMRIwEAYDVQQHDAlDYXBlIFRvd24xEjAQ
+BgNVBAoMCVJ1c2tzIEx0ZDELMAkGA1UECwwCTWExEjAQBgNVBAMMCWxvY2FsaG9z
+dDAeFw0yMDAxMTQxNjI0MzVaFw0zMDAxMTExNjI0MzVaMG0xCzAJBgNVBAYTAlpB
+MRUwEwYDVQQIDAxXZXN0ZXJuIENhcGUxEjAQBgNVBAcMCUNhcGUgVG93bjESMBAG
+A1UECgwJUnVza3MgTHRkMQswCQYDVQQLDAJNYTESMBAGA1UEAwwJbG9jYWxob3N0
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtS/5beoFSmSDQe+pMAWL
++hGF/Y2BpF9rQbgit+gdBlVFwE3xH7DulNG4CZxfNlLRPDa9fQPFbFbmD0xsnFLU
+d2dolMAKsAYoZjww913Xiqxc0ttyhH9TnMKZW1RbFAYsqTDbsYovSj9iDnhXMzXj
+b9Q1BkjStnuF5IWxhcpQlvmHr9/acWCyOIU/BfCTRLg8F+30JP3Dt3DcxPwPU5Js
+fUrH3P3KCnQtNk/+dyppZamqKCa3C0yVtpMDPcea/rtVNwP/Cu7iQNnjYpML92kW
+xXR/tm5fk45J/mpC+OK2VSCRpeSb50UMKBC/lb6NGa0PohS4kgNkfZXXPzSyWuhX
+gwIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBTqJskNcwTM1WxJrC14oWLuekvA4fE
+Ugu2RhLLjhmK16mRGn9QE2/N7lE1TdJ8xX0NhyYeKR9dosOxMIRDNI3z+gKw8qJO
+/UrKavgcbZsJH+OQiNZ64iIgeq6AsdEcDD8bs2QjdldttgLTALZ8d66bbLhjwn0j
+GZpXKhhs/24Oi/vlDOyXh538HNXq5UddkRcRLdl9arocEwNDy4NpsbVPXeVIrok0
+0tsc6KvwtAjsjWpEjgOI0Pl0+l4hA0MoMLxV15onKeCi7JQaLaP8tmNlXHFj9qu+
+X5UpiCO6e/pce8I5RwyQEKjpcyDNyWaUk1Z1xwYEzUcxtvvYxpUpyOOx
+-----END CERTIFICATE-----`
+
+// TestCertPvtKey is the private key associated to TestCert.
+const TestCertPvtKey = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC1L/lt6gVKZINB
+76kwBYv6EYX9jYGkX2tBuCK36B0GVUXATfEfsO6U0bgJnF82UtE8Nr19A8VsVuYP
+TGycUtR3Z2iUwAqwBihmPDD3XdeKrFzS23KEf1OcwplbVFsUBiypMNuxii9KP2IO
+eFczNeNv1DUGSNK2e4XkhbGFylCW+Yev39pxYLI4hT8F8JNEuDwX7fQk/cO3cNzE
+/A9Tkmx9Ssfc/coKdC02T/53KmllqaooJrcLTJW2kwM9x5r+u1U3A/8K7uJA2eNi
+kwv3aRbFdH+2bl+Tjkn+akL44rZVIJGl5JvnRQwoEL+Vvo0ZrQ+iFLiSA2R9ldc/
+NLJa6FeDAgMBAAECggEACYp0LPiEvM0cKE2xcAjqvQlNL/PSntAzeqtykJKVbK7y
+1FSGXO/ZMFb2xPLKBLdJs00Cn2GidLkCtk2E7pph+8OjOyn9phU87V1ACtaTMgcv
+gB70Icv+oCOTJb8EaMKGeYZMG0Y2hUdfJ3noxZaR2mKnRCRzjA5nF4h+t5fWtIxq
+doDh6j33i0d0l+3K9nR1EP4K46FkUNSjVmbJhOTYU9q8H4ewZ2RzgknGcRWNhV5z
+M4/X37FfVO85Jn2kWaPx3NxFtGUXqzbCsYPnNaY/lhhfJdXNNlu9Qi1NyAdEDJFU
+wwYRi66y6CABttojCzilDRv73BFlbwf611ZG5qACmQKBgQDrP48pe1RTlLe4Hac+
+SihKW2G0mFkgkxj9dp3VnbduxOXbKwrz5GaIZaD+o+BeYmqjRiryKBhvcq7xZb00
+r6ko/xhFcPeomvYCrNg1sm1FVyLD02I5xNodolDISH9VagZofQ1S8sJzeytiZNzJ
+metSJ6rpy7LDUtrkbq3Ss7zgnQKBgQDFK5j8sOuF8A+0zBGhOAcKetCm+4YBHQCy
+WWluxhL7S2rJXXhLM2qssp56FjOFavQ1sLlFLnrEsaNgklNU7fIWy2ImmT0sa8Y2
+S3UzeXhZ5jMUOLsQW23zsP7Z6c0U0hMpzQRYVEKbutk1z6Qga/k1JqjwOgTaZztK
+si2Kpf1OnwKBgB+WiUKorMoMTh8K3Eog6wgQ/S2ix1T4a4KdStREOT1Gcxba0L2v
+DZWDD/shRh9mV6tU4K9jcuSEIbmIT7+jVrOKjVfFs3uQUzhIvT94lfOZn7Fr0OSw
+6hjQkshR88ckVXfyUrewoSugflLX+E2ZvV9qtChwkbBoj7vcoLqKJ/KBAoGBAIA6
+C0OC15kCd2RwNqLvafzRxHJkL1D4CKT0axHkdSHCeU89n2bgqGZpv5DMcXM6DFoC
+dWrdgG/8yrCaWOFp4cAbQtixXcxOxtg2mKECRVfJ0rw67MUFgOsz13nmiD4bJOVR
+dJrxKWRXzr0lLar8LVT4sHOSd+eFrVS1rdJ2gtcnAoGAYwcT3uVWoPNcZHrnaYDi
+Eo1+9kd8vS5mr5bgIOJ1nS9np4Bg6qDyTtgVZHanIjXw/1UZ4tRKbqd0mC+ZfFNP
+N6kAg1/mvAdO45ZwCd2DJbNC8/U5e7lAxcqJBKp/i0VwmeAcZyfXDttD6epNsuOM
+wSWFX8pQTNWseFTkRvJEShM=
+-----END PRIVATE KEY-----`
