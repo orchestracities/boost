@@ -23,5 +23,6 @@ cp "${MIXER_REPO}/testdata/config/attributes.yaml" "${TESTDATADIR}/"
 
 echo "Generating operator config..."
 cat "${ROOTDIR}/deployment/sample_operator_cfg.yaml" | \
-    sed 's/orionadapterservice:43210/[::]:43210/g' > \
+    sed -e 's/orionadapterservice:43210/[::]:43210/g' \
+        -e 's/mockdaps:44300/localhost:44300/g' > \
     "${TESTDATADIR}/sample_operator_cfg.yaml"

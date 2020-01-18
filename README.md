@@ -41,7 +41,11 @@ hook up. Bring up the Mixer server in a new terminal:
 
     $ sh scripts/run-mixer.sh
 
-Now you're ready to use the Mixer client to send an IDSA header to the
+Next up is our own test DAPS service. Open up a new term and:
+
+    $ go run mockdaps/main.go 44300
+
+Finally you're ready to use the Mixer client to send an IDSA header to the
 Mixer server. Open a new terminal and run:
 
     $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
@@ -53,6 +57,10 @@ input, puts it in an IDSA template header and sends it to the Mixer which,
 in turn, passes the IDSA header on to the adapter. On getting the header
 value, the adapter verifies the token's RSA 256 signature using the public
 key in its config---see `_output_/testdata/sample_operator_cfg.yaml`.
+Then it goes on to requesting an ID token from our local DAPS test
+service---again have a look at `_output_/testdata/sample_operator_cfg.yaml`.
+In the DAPS terminal, you should be able to see the adapter hitting
+DAPS with a request for an ID token.
 
 If you call the script with an invalid token:
 
