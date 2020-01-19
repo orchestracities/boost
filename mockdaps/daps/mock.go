@@ -10,26 +10,12 @@ import (
 	"github.com/orchestracities/boost/mockdaps/https"
 )
 
-// NOTE. mTLS setup.
-// We use the localhost certificate (`TestCert`) and associated private key
-// (`TestCertPvtKey`) defined in "config.go" for mTLS:
-//
-// * client cert: TestCert
-// * server cert & pvt key: TestCert, TestCertPvtKey
-//
-// So the client gets configured to present `TestCert` (client's cert) to
-// authenticate with the server and verifies server identity using the same
-// `TestCert` (server's cert). Likewise the server presents `TestCert`
-// (server's cert) to authenticate with the client and verifies client
-// identity using `TestCert` (client's cert). Can it get more confusing than
-// this? I know, I'm a lazy bastard, I should've used different certs for
-// client and server...
-
-func mTLSConfig() (*tls.Config, error) {
-	m := &https.MutualTLSConfig{
-		ClientCerts:      []https.PemData{TestCert},
-		ServerCert:       TestCert,
-		ServerCertPvtKey: TestCertPvtKey,
+func mTLSConfig(serverPvtKeyFile, serverCertFile,
+	clientCertFile string) (*tls.Config, error) {
+	m := &https.MutualTLSConfig{}
+	err := m.FromFiles(serverPvtKeyFile, serverCertFile, clientCertFile)
+	if err != nil {
+		return nil, err
 	}
 	return m.ServerTLSConfig()
 }
@@ -49,8 +35,8 @@ func registerHandlers() {
 }
 
 // Serve starts the DAPS mock server.
-func Serve(port string) {
-	config, err := mTLSConfig()
+func Serve(port, serverPvtKeyFile, serverCertFile, clientCertFile string) {
+	config, err := mTLSConfig(serverPvtKeyFile, serverCertFile, clientCertFile)
 	if err != nil {
 		log.Fatal(err)
 		return

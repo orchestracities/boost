@@ -4,10 +4,20 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 )
 
 // PemData is a string containing certificates or keys in PEM format.
 type PemData string
+
+// PemDataFromFile reads PEM data from the specified file.
+func PemDataFromFile(path string) (PemData, error) {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return PemData(content), nil
+}
 
 func (d *PemData) bytes() []byte {
 	return []byte(*d)
@@ -18,6 +28,28 @@ type MutualTLSConfig struct {
 	ClientCerts      []PemData
 	ServerCert       PemData
 	ServerCertPvtKey PemData
+}
+
+// FromFiles populates MutualTLSConfig with the PEM data in the given files.
+func (c *MutualTLSConfig) FromFiles(
+	serverPvtKeyFile, serverCertFile, clientCertFile string) error {
+	svrKey, err1 := PemDataFromFile(serverPvtKeyFile)
+	svrCrt, err2 := PemDataFromFile(serverCertFile)
+	cltCrt, err3 := PemDataFromFile(clientCertFile)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		//msg :=
+		return fmt.Errorf("can't read PEM file(s)\n:[%s]: %v\n[%s]: %v\n[%s]: %v",
+			serverPvtKeyFile, err1,
+			serverCertFile, err2,
+			clientCertFile, err3)
+	}
+
+	c.ClientCerts = []PemData{cltCrt}
+	c.ServerCert = svrCrt
+	c.ServerCertPvtKey = svrKey
+
+	return nil
 }
 
 func (c *MutualTLSConfig) buildCAPool() (*x509.CertPool, error) {
