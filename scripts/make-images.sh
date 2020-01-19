@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-# Clone the Istio repo in the GOPATH where Istio codegen expects it to be.
-# If cloned already, clean it up since an earlier run to generate our adpater
-# config would leave around quite a bit of junk.
+# Build Docker images for the adapter and the mock DAPS service.
 
 set -e
 
@@ -14,3 +12,7 @@ source "${ROOTDIR}/scripts/env.sh"
 echo "Generating adapter Docker image..."
 pushd "${ROOTDIR}" && \
     docker build -t boost/orionadapter -f container/Dockerfile .
+
+echo "Generating mock DAPS Docker image..."
+pushd "${ROOTDIR}" && \
+    docker build -t boost/mockdaps -f container/mockdaps.dockerfile .
