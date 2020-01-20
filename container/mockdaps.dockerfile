@@ -50,6 +50,7 @@ RUN cp /build/bin/mockdaps ./
 # E.g. this example uses /data as a working directory that would probably
 #      be bound to a perstistent dir when running the container normally
 RUN mkdir /data
+COPY ./deployment/daps /data/daps
 
 # Create the minimal runtime image.
 FROM scratch
@@ -67,5 +68,8 @@ USER 65534
 WORKDIR /data
 
 ENTRYPOINT ["/mockdaps"]
-CMD [ "44300" ]
+#       port        server key                   server cert
+CMD [ "44300", "daps/mockdaps.key-pair.pem", "daps/mockdaps.minikube.crt.pem", \
+#       client cert
+      "daps/adapter.minikube.crt.pem" ]
 EXPOSE 44300
