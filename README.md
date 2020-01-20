@@ -31,13 +31,20 @@ For the brave:
     $ go build ./...
     $ sh scripts/make-mix.sh
     $ sh scripts/populate-testdata.sh
-    $ go run orionadapter/main.go 43210
+
+You should see on screen a warning message asking you to edit
+`_output_/testdata/sample_operator_cfg.yaml` to replace adapter
+certs. Do it :-)
 
 **Note**. `make-mix.sh`. It only runs on MacOS and Linux but it shouldn't
 be impossible to tweak it to make it work on other OSes too.
 
-Now our custom adapter is running and waiting for the Mixer server to
-hook up. Bring up the Mixer server in a new terminal:
+Start our custom adapter
+
+    $ go run orionadapter/main.go 43210
+
+With the adapter running and waiting for the Mixer server to hook up,
+bring up the Mixer server in a new terminal:
 
     $ sh scripts/run-mixer.sh
 
