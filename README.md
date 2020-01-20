@@ -43,7 +43,7 @@ hook up. Bring up the Mixer server in a new terminal:
 
 Next up is our own test DAPS service. Open up a new term and:
 
-    $ go run mockdaps/main.go 44300
+    $ sh scripts/run-mockdaps.sh
 
 Finally you're ready to use the Mixer client to send an IDSA header to the
 Mixer server. Open a new terminal and run:
@@ -103,23 +103,26 @@ it (i.e. set `disablePolicyChecks` to `false`) but it doesn't nor does it
 work to specify that option at installation time which is why you'll have
 to manually edit the K8s config after applying the Istio `demo` profile.
 
-##### Adapter image
+##### Adapter and mock DAPS images
 
-Now let's build our adapter's Docker image and then make Minikube use
-that local image. In a new terminal:
+Let's "Dockerise" our adapter so we can run it on the freshly minted Istio
+mesh. And as we're at it, we'll also build a Docker image for the mock
+DAPS service we used earlier. We've got a script, `make-images.sh`, to
+build them images and a nifty bit of sleight of hand will make Minikube
+use them. In a new terminal:
 
     $ cd $GOPATH/src/orchestracities/boost/
     $ eval $(minikube docker-env)
-    $ sh scripts/make-image.sh
+    $ sh scripts/make-images.sh
     $ exit
 
-The above basically stashes away our image in Minikube's own local Docker
-registry so that it can be fetched from there instead of trekking all
+The above basically stashes away our images in Minikube's own local Docker
+registry so they can be fetched from there instead of trekking all
 the way to DockerHub. This article explains how the trick works:
 
 - https://dzone.com/articles/running-local-docker-images-in-kubernetes-1
 
-##### Deploying a dummy target service
+##### Deploying dummy services
 
 Our adapter is supposed to process attributes of messages directed to
 Orion. For the sake of testing though, there's no need to deploy Orion
@@ -132,7 +135,13 @@ passed down to the target service.
     $ kubectl apply -f deployment/httpbin_service.yaml
     $ kubectl apply -f deployment/ingress_routing.yaml
 
-Now you should wait a bit until `httpbin` and all Istio services/pods are
+Another thing the adapter is supposed to do is getting an IDS identity
+token from a DAPS service. Again, since we're just testing locally here,
+we can get away with deploying our mock DAPS we dockerised earlier:
+
+    $ kubectl apply -f deployment/mock_daps_service.yaml
+
+Wait a bit until `httpbin`, `mockdaps` and all Istio services/pods are
 alive & kicking. Then you should be able to see what HTTP headers the
 `httpbin` service gets to see when you `curl` a request:
 
@@ -209,7 +218,7 @@ your terminal should be similar to:
 
     HTTP/1.1 200 OK
     ...
-    fiware-ids-server-token: generated.server.token
+    fiware-ids-server-token: eyJAdHlwZSI6ImlkczpSZXN1bHRNZXNz...
 
     {
         "headers": {
@@ -225,6 +234,35 @@ your terminal should be similar to:
             "X-Envoy-Internal": "true"
         }
     }
+
+What goes in `fiware-ids-server-token` is a Base64-encoded JSON object
+that actually holds the identity token the adapter got back from DAPS.
+Since our adapter got configured to talk to the dodgy DAPS server we
+deployed earlier, if you decode the header value you should get the
+below JSON:
+
+    {
+        "@type": "ids:ResultMessage",
+        "id": "http://industrialdataspace.org/resultMessage/1a421b8c-3407-44a8-aeb9-253f145c869a",
+        "issued": "2020-01-20T11:19:47Z",
+        "modelVersion": "2.1.0",
+        "issuerConnector": "https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b",
+        "securityToken": {
+            "@type": "ids:DynamicAttributeToken",
+            "tokenFormat": "https://w3id.org/idsa/code/tokenformat/JWT",
+            "tokenValue": "whoopsie.dapsie.jwt"
+        }
+    }
+
+In fact, the mock DAPS service always returns a hard-coded ID token,
+i.e. `whoopsie.dapsie.jwt`. Keen on some real DAPS action? Edit the
+`daps` config in `deployment/sample_operator_cfg.yaml` to have our
+adapter do mTLS with your DAPS server of choice, then
+
+    $ kubectl apply -f deployment/sample_operator_cfg.yaml
+
+and voila, real DAPS identity tokens will be handed to you on
+a silver platter.
 
 Happy days!
 

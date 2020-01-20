@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mockdaps
+  labels:
+    app: mockdaps
+spec:
+  type: ClusterIP
+  ports:
+  - name: https
+    port: 44300
+    targetPort: 44300
+  selector:
+    app: mockdaps
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mockdaps
+  labels:
+    app: mockdaps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mockdaps
+  template:
+    metadata:
+      labels:
+        app: mockdaps
+      annotations:
+        sidecar.istio.io/inject: "false"
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+    spec:
+      containers:
+      - name: mockdaps
+        image: boost/mockdaps:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 44300
