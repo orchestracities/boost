@@ -60,6 +60,8 @@ If you call the script with an invalid token:
 
 you should get a fat permission denied back.
 
+After this manual pre-check you can exit with CTRL-C and close the involved terminal windows.
+
 
 ### Local cluster deployment
 
@@ -70,7 +72,7 @@ our adapter in it. Brace! Brace!
 ##### Deploying Istio
 
 After installing Minikube, download the Istio release and install the demo
-profile. Here's the short version, assuming you've already installed Minikube:
+profile. Here's the short version, assuming you've already installed Minikube (Tests have also been successful with --memory=4096 for not so big machines):
 
     $ cd ~
     $ minikube start --memory=16384 --cpus=4
@@ -81,7 +83,7 @@ profile. Here's the short version, assuming you've already installed Minikube:
     # ...ideally you should add the above to your Bash profile.
     $ istioctl manifest apply --set profile=demo
     $ kubectl -n istio-system edit cm istio
-    # ...set disablePolicyChecks to false, save & exit
+    # ...set disablePolicyChecks to false ("i" for insert mode, "ESC" ":wq" for save & exit)
     $ kubectl label namespace default istio-injection=enabled
 
 Long version:
@@ -124,7 +126,7 @@ passed down to the target service.
     $ kubectl apply -f deployment/httpbin_service.yaml
     $ kubectl apply -f deployment/ingress_routing.yaml
 
-Now you should wait a bit until `httpbin` and all Istio services/pods are
+Now you should wait a bit (can be up to some 5 minutes) until `httpbin` and all Istio services/pods are
 alive & kicking. Then you should be able to see what HTTP headers the
 `httpbin` service gets to see when you `curl` a request:
 
@@ -175,13 +177,13 @@ You should get back a fat 403 with a message along the lines of:
 
     PERMISSION_DENIED:h1.handler.istio-system:unauthorized: invalid JWT data
 
-Like I said earlier, the adapter verifies the JWT you send is valid---see
+Like I said earlier, the adapter verifies the JWT you send as part of the IDSA-Header is valid---see
 `deployment/sample_operator_cfg.yaml`. What happens if we send a valid
 token then? Here's a valid JWT signed with the private key in the config.
 
     $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
 
-Now we can use this convenience script to stick it into an IDSA header:
+Now we can use this convenience script to stick it into an fully-fledged base64-encoded IDSA header:
 
     $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${MY_FAT_JWT}")
 
@@ -192,9 +194,9 @@ and send the header with
 
 The request should go through to the target `httpbin` service
 which should reply with the HTTP headers it gets to see and there
-should be no IDSA header in the returned list since our routing
-chops that head(-er) off before sending the request on to `httpbin`.
-(But see note above about header removal!) You should also be able to
+should LATER be no IDSA header in the returned list since our routing
+CURRENTLY DOES NOT YET chops that head(-er) off before sending the request on to `httpbin`.
+(See note above about header removal!) You should also be able to
 spot a `fiware-ids-server-token` among the response headers: this is
 where we plonk in the IDS server token we generate. What you see on
 your terminal should be similar to:
@@ -242,7 +244,7 @@ redo everything from a clean slate!
 
 * adapter scaffolding (done)
 * token validation (done)
-* dropping of token header before forwarding message to Orion (done)
+* dropping of token header before forwarding message to Orion (to do)
 * response token header injection (in progress)
 * K8s + Istio + adapter local and cloud deployment (done)
 * mutual TLS (almost there!)
