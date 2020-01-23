@@ -23,3 +23,8 @@ deployment/template.yaml
 # Our output dir
 #
 _output_
+
+#
+# Convenience dir to keep stuff that shouln't be version-controlled
+#
+_local_

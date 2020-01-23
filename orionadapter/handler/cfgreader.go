@@ -54,3 +54,68 @@ func getIdsaPrivateKey(p *config.Params, e error) (string, error) {
 	}
 	return ensureString("IdsaPrivateKey", p.IdsaPrivateKey)
 }
+
+func getDaps(p *config.Params) *config.Daps {
+	if p.Daps != nil {
+		return p.Daps
+	}
+	return &config.Daps{}
+}
+
+func getDapsConnectorID(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("Daps.ConnectorId", getDaps(p).ConnectorId)
+}
+
+func getDapsConnectorAudience(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("Daps.ConnectorAudience", getDaps(p).ConnectorAudience)
+}
+
+func getDapsSecondsBeforeExpiry(p *config.Params, e error) (uint32, error) {
+	if e != nil {
+		return 0, e
+	}
+	return getDaps(p).SecondsBeforeExpiry, nil
+}
+
+func getDapsPrivateKey(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("Daps.PrivateKey", getDaps(p).PrivateKey)
+}
+
+func getDapsConnectorCertificate(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("Daps.ConnectorCertificate",
+		getDaps(p).ConnectorCertificate)
+}
+
+func getDapsServerCertificate(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("Daps.ServerCertificate",
+		getDaps(p).ServerCertificate)
+}
+
+func getDapsServerHost(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("Daps.ServerHost", getDaps(p).ServerHost)
+}
+
+func getIDTokenJSONTemplate(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("IdTokenJsonTemplate", p.IdTokenJsonTemplate)
+}

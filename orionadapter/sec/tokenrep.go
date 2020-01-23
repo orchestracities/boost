@@ -3,8 +3,7 @@ package token
 import (
 	"encoding/base64"
 	"encoding/json"
-
-	ilog "istio.io/pkg/log"
+	"fmt"
 )
 
 // ClientHeader holds the parts of the IDS client header we're interested in.
@@ -44,13 +43,22 @@ func jsonValueFromBase64(idsHeaderAttr string) (string, error) {
 func ReadClientToken(idsHeaderAttr string) (token string, err error) {
 	idsHeaderValue, err := jsonValueFromBase64(idsHeaderAttr)
 	if err != nil {
-		ilog.Errorf("error decoding IDS header: %v", err)
-		return "", err
+		return "", headerDecodingError(err)
 	}
 	token, err = extractClientToken(idsHeaderValue)
 	if err != nil {
-		ilog.Errorf("error extracting client token from IDS header: %v", err)
-		return "", err
+		return "", tokenExtractionError(err)
 	}
 	return token, nil
+}
+
+// errors boilerplate
+
+func headerDecodingError(cause error) error {
+	return fmt.Errorf("error decoding IDS header: %v", cause)
+}
+
+func tokenExtractionError(cause error) error {
+	return fmt.Errorf("error extracting client token from IDS header: %v",
+		cause)
 }

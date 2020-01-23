@@ -7,6 +7,7 @@ import (
 	"istio.io/istio/mixer/pkg/status"
 	ilog "istio.io/pkg/log"
 
+	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	token "github.com/orchestracities/boost/orionadapter/sec"
 )
@@ -34,7 +35,7 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 		return invalidJWTError(), nil
 	}
 
-	serverToken, err := generateToken()
+	serverToken, err := generateToken(params)
 	if err != nil {
 		ilog.Errorf("error generating server token: %v\n", err)
 		return tokenGenError(), nil
@@ -51,8 +52,44 @@ func validateToken(pubKey string, headerValue string) error {
 	return token.Validate(pubKey, jwt)
 }
 
-func generateToken() (string, error) {
-	return "generated.server.token", nil
+func generateToken(p *config.Params) (string, error) {
+	daps, err := buildDapsIDRequest(p)
+	idTokenTemplate, err := getIDTokenJSONTemplate(p, err)
+	if err != nil {
+		return "", err
+	}
+
+	idToken, err := daps.IdentityToken()
+	if err != nil {
+		return "", err
+	}
+
+	return token.BuildServerHeader(idTokenTemplate, idToken)
+}
+
+func buildDapsIDRequest(p *config.Params) (*token.DapsIDRequest, error) {
+	connectorID, err := getDapsConnectorID(p, nil)
+	connectorAudience, err := getDapsConnectorAudience(p, err)
+	secondsBeforeExpiry, err := getDapsSecondsBeforeExpiry(p, err)
+	privateKey, err := getDapsPrivateKey(p, err)
+	connectorCertificate, err := getDapsConnectorCertificate(p, err)
+	serverCertificate, err := getDapsServerCertificate(p, err)
+	serverHost, err := getDapsServerHost(p, err)
+
+	if err != nil {
+		return nil, err
+	}
+
+	r := &token.DapsIDRequest{
+		ConnectorID:          connectorID,
+		ConnectorAudience:    connectorAudience,
+		SecondsBeforeExpiry:  secondsBeforeExpiry,
+		PrivateKey:           privateKey,
+		ConnectorCertificate: connectorCertificate,
+		ServerCertificate:    serverCertificate,
+		ServerHost:           serverHost,
+	}
+	return r, nil
 }
 
 // response generation boilerplate

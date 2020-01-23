@@ -31,17 +31,28 @@ For the brave:
     $ go build ./...
     $ sh scripts/make-mix.sh
     $ sh scripts/populate-testdata.sh
-    $ go run orionadapter/main.go 43210
+
+You should see on screen a warning message asking you to edit
+`_output_/testdata/sample_operator_cfg.yaml` to replace adapter
+certs. Do it :-)
 
 **Note**. `make-mix.sh`. It only runs on MacOS and Linux but it shouldn't
 be impossible to tweak it to make it work on other OSes too.
 
-Now our custom adapter is running and waiting for the Mixer server to
-hook up. Bring up the Mixer server in a new terminal:
+Start our custom adapter
+
+    $ go run orionadapter/main.go 43210
+
+With the adapter running and waiting for the Mixer server to hook up,
+bring up the Mixer server in a new terminal:
 
     $ sh scripts/run-mixer.sh
 
-Now you're ready to use the Mixer client to send an IDSA header to the
+Next up is our own test DAPS service. Open up a new term and:
+
+    $ sh scripts/run-mockdaps.sh
+
+Finally you're ready to use the Mixer client to send an IDSA header to the
 Mixer server. Open a new terminal and run:
 
     $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
@@ -53,6 +64,10 @@ input, puts it in an IDSA template header and sends it to the Mixer which,
 in turn, passes the IDSA header on to the adapter. On getting the header
 value, the adapter verifies the token's RSA 256 signature using the public
 key in its config---see `_output_/testdata/sample_operator_cfg.yaml`.
+Then it goes on to requesting an ID token from our local DAPS test
+service---again have a look at `_output_/testdata/sample_operator_cfg.yaml`.
+In the DAPS terminal, you should be able to see the adapter hitting
+DAPS with a request for an ID token.
 
 If you call the script with an invalid token:
 
@@ -72,10 +87,11 @@ our adapter in it. Brace! Brace!
 ##### Deploying Istio
 
 After installing Minikube, download the Istio release and install the demo
-profile. Here's the short version, assuming you've already installed Minikube (Tests have also been successful with --memory=4096 for not so big machines):
+profile. Here's the short version, assuming you've already installed Minikube:
 
     $ cd ~
     $ minikube start --memory=16384 --cpus=4
+    # Try --memory=4096 if you don't have that much RAM, it worked for us :-)
     $ kubectl config use-context minikube
     $ curl -L https://istio.io/downloadIstio | sh -
     $ cd istio-*
@@ -97,23 +113,26 @@ it (i.e. set `disablePolicyChecks` to `false`) but it doesn't nor does it
 work to specify that option at installation time which is why you'll have
 to manually edit the K8s config after applying the Istio `demo` profile.
 
-##### Adapter image
+##### Adapter and mock DAPS images
 
-Now let's build our adapter's Docker image and then make Minikube use
-that local image. In a new terminal:
+Let's "Dockerise" our adapter so we can run it on the freshly minted Istio
+mesh. And as we're at it, we'll also build a Docker image for the mock
+DAPS service we used earlier. We've got a script, `make-images.sh`, to
+build them images and a nifty bit of sleight of hand will make Minikube
+use them. In a new terminal:
 
     $ cd $GOPATH/src/orchestracities/boost/
     $ eval $(minikube docker-env)
-    $ sh scripts/make-image.sh
+    $ sh scripts/make-images.sh
     $ exit
 
-The above basically stashes away our image in Minikube's own local Docker
-registry so that it can be fetched from there instead of trekking all
+The above basically stashes away our images in Minikube's own local Docker
+registry so they can be fetched from there instead of trekking all
 the way to DockerHub. This article explains how the trick works:
 
 - https://dzone.com/articles/running-local-docker-images-in-kubernetes-1
 
-##### Deploying a dummy target service
+##### Deploying dummy services
 
 Our adapter is supposed to process attributes of messages directed to
 Orion. For the sake of testing though, there's no need to deploy Orion
@@ -126,9 +145,17 @@ passed down to the target service.
     $ kubectl apply -f deployment/httpbin_service.yaml
     $ kubectl apply -f deployment/ingress_routing.yaml
 
-Now you should wait a bit (can be up to some 5 minutes) until `httpbin` and all Istio services/pods are
-alive & kicking. Then you should be able to see what HTTP headers the
-`httpbin` service gets to see when you `curl` a request:
+Another thing the adapter is supposed to do is getting an IDS identity
+token from a DAPS service. Again, since we're just testing locally here,
+we can get away with deploying our mock DAPS we dockerised earlier:
+
+    $ kubectl apply -f deployment/mock_daps_service.yaml
+
+Wait a bit until `httpbin`, `mockdaps` and all Istio services/pods are
+alive & kicking. (If you don't have a beefy box, this will take a while,
+like even 5 mins, go for coffee!)
+Then you should be able to see what HTTP headers the `httpbin` service
+gets to see when you `curl` a request:
 
     $ source scripts/cluster-url.sh
     $ curl -v "$BASE_URL"/headers
@@ -183,7 +210,7 @@ token then? Here's a valid JWT signed with the private key in the config.
 
     $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
 
-Now we can use this convenience script to stick it into an fully-fledged base64-encoded IDSA header:
+Now we can use this convenience script to stick it into a fully-fledged base64-encoded IDSA header:
 
     $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${MY_FAT_JWT}")
 
@@ -193,17 +220,17 @@ and send the header with
         -H "header:${HEADER_VALUE}"
 
 The request should go through to the target `httpbin` service
-which should reply with the HTTP headers it gets to see and there
-should LATER be no IDSA header in the returned list since our routing
-CURRENTLY DOES NOT YET chops that head(-er) off before sending the request on to `httpbin`.
-(See note above about header removal!) You should also be able to
-spot a `fiware-ids-server-token` among the response headers: this is
-where we plonk in the IDS server token we generate. What you see on
-your terminal should be similar to:
+which should reply with the HTTP headers it gets to see.
+You should be able to
+spot a `header` among the response headers: this is where we plonk in
+the IDS server token we generate. (No seriously, no pun intended, the
+response header we output, just like the request header, is also called
+`header` :-)
+What you see on your terminal should be similar to:
 
     HTTP/1.1 200 OK
     ...
-    fiware-ids-server-token: generated.server.token
+    header: eyJAdHlwZSI6ImlkczpSZXN1bHRNZXNz...(adapter generated)...
 
     {
         "headers": {
@@ -219,6 +246,44 @@ your terminal should be similar to:
             "X-Envoy-Internal": "true"
         }
     }
+
+Ideally, you shouldn't see the IDSA client header being echoed back
+by `httpbin` (`headers` JOSN object), yet there it is in all its glory.
+In fact, our routing was supposed to chop that head(-er) off before
+sending the request on to `httpbin` which ain't happening at the
+moment---see #11 about it.
+
+What goes in the adapter's output `header` is a Base64-encoded JSON object
+that actually holds the identity token the adapter got back from DAPS.
+Since our adapter got configured to talk to the dodgy DAPS server we
+deployed earlier, if you decode the header value you should get a JSON
+object similar to:
+
+    {
+        "@type": "ids:ResultMessage",
+        "id": "http://industrialdataspace.org/resultMessage/1a421b8c-3407-44a8-aeb9-253f145c869a",
+        "issued": "2020-01-20T11:19:47Z",
+        "modelVersion": "2.1.0",
+        "issuerConnector": "https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b",
+        "securityToken": {
+            "@type": "ids:DynamicAttributeToken",
+            "tokenFormat": "https://w3id.org/idsa/code/tokenformat/JWT",
+            "tokenValue": "whoopsie.dapsie.jwt"
+        }
+    }
+
+Actually, except for the `id` field (which will hold a different UUID
+every time) and the `issued` field (current date/time) the JSON you
+get back should be the same as the above.
+In fact, the mock DAPS service always returns a hard-coded ID token,
+i.e. `whoopsie.dapsie.jwt`. Keen on some real DAPS action? Edit the
+`daps` config in `deployment/sample_operator_cfg.yaml` to have our
+adapter do mTLS with your DAPS server of choice, then
+
+    $ kubectl apply -f deployment/sample_operator_cfg.yaml
+
+and voila, real DAPS identity tokens will be handed to you on
+a silver platter.
 
 Happy days!
 
@@ -244,8 +309,8 @@ redo everything from a clean slate!
 
 * adapter scaffolding (done)
 * token validation (done)
-* dropping of token header before forwarding message to Orion (to do)
-* response token header injection (in progress)
+* dropping of token header before forwarding message to Orion (to do, see #11)
+* response token header injection (done)
 * K8s + Istio + adapter local and cloud deployment (done)
 * mutual TLS (almost there!)
 * Istio gateway / virtual service to handle IDS / Fiware message translation
