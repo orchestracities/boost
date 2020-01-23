@@ -219,13 +219,15 @@ which should reply with the HTTP headers it gets to see and there
 should be no IDSA header in the returned list since our routing
 chops that head(-er) off before sending the request on to `httpbin`.
 (But see note above about header removal!) You should also be able to
-spot a `fiware-ids-server-token` among the response headers: this is
-where we plonk in the IDS server token we generate. What you see on
-your terminal should be similar to:
+spot a `header` among the response headers: this is where we plonk in
+the IDS server token we generate. (No seriously, no pun intended, the
+response header we output, just like the request header, is also called
+`header` :-)
+What you see on your terminal should be similar to:
 
     HTTP/1.1 200 OK
     ...
-    fiware-ids-server-token: eyJAdHlwZSI6ImlkczpSZXN1bHRNZXNz...
+    header: eyJAdHlwZSI6ImlkczpSZXN1bHRNZXNz...(adapter generated)...
 
     {
         "headers": {
@@ -242,11 +244,11 @@ your terminal should be similar to:
         }
     }
 
-What goes in `fiware-ids-server-token` is a Base64-encoded JSON object
+What goes in the adapter's output `header` is a Base64-encoded JSON object
 that actually holds the identity token the adapter got back from DAPS.
 Since our adapter got configured to talk to the dodgy DAPS server we
-deployed earlier, if you decode the header value you should get the
-below JSON:
+deployed earlier, if you decode the header value you should get a JSON
+object similar to:
 
     {
         "@type": "ids:ResultMessage",
@@ -261,6 +263,9 @@ below JSON:
         }
     }
 
+Actually, except for the `id` field (which will hold a different UUID
+every time) and the `issued` field (current date/time) the JSON you
+get back should be the same as the above.
 In fact, the mock DAPS service always returns a hard-coded ID token,
 i.e. `whoopsie.dapsie.jwt`. Keen on some real DAPS action? Edit the
 `daps` config in `deployment/sample_operator_cfg.yaml` to have our
@@ -296,7 +301,7 @@ redo everything from a clean slate!
 * adapter scaffolding (done)
 * token validation (done)
 * dropping of token header before forwarding message to Orion (done)
-* response token header injection (in progress)
+* response token header injection (done)
 * K8s + Istio + adapter local and cloud deployment (done)
 * mutual TLS (almost there!)
 * Istio gateway / virtual service to handle IDS / Fiware message translation

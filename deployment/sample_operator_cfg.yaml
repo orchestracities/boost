@@ -184,6 +184,6 @@ spec:
    - icheck
    name: adapter_response
  responseHeaderOperations:
-  - name: fiware-ids-server-token
+  - name: header
     values: [ adapter_response.output.context_broker_token ]
 ---
