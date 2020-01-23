@@ -54,7 +54,7 @@ spec:
   id_token_json_template: |
     {
       "@type": "ids:ResultMessage",
-      "id": "http://industrialdataspace.org/resultMessage/1a421b8c-3407-44a8-aeb9-253f145c869a",
+      "id": "http://industrialdataspace.org/resultMessage/%s",
       "issued": "%s",
       "modelVersion": "2.1.0",
       "issuerConnector": "https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b",

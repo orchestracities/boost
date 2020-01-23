@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -39,6 +40,12 @@ func populateServerHeader(config *ServerHeader, idToken string,
 	config.Issued = time.Now().Format(time.RFC3339)
 	config.SecurityToken.TokenValue = idToken
 
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return uuidGenError(err)
+	}
+	config.ID = fmt.Sprintf(config.ID, id)
+
 	return nil
 }
 
@@ -73,4 +80,8 @@ func serverHeaderSerializationError(cause error) error {
 
 func malformedServerHeaderTemplateError(cause error) error {
 	return fmt.Errorf("malformed ID token JSON template: %v", cause)
+}
+
+func uuidGenError(cause error) error {
+	return fmt.Errorf("failed to generate v4 uuid: %v", cause)
 }

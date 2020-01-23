@@ -9,7 +9,7 @@ import (
 
 const serverHeaderJSONTemplate string = `{
 	"@type": "ids:ResultMessage",
-	"id": "http://industrialdataspace.org/resultMessage/1a421b8c-3407-44a8-aeb9-253f145c869a",
+	"id": "http://industrialdataspace.org/resultMessage/%s",
 	"issued": "%s",
 	"modelVersion": "2.1.0",
 	"issuerConnector": "https://companyA.com/connector/59a68243-dd96-4c8d-88a9-0f0e03e13b1b",
@@ -34,6 +34,10 @@ func TestBuildServerHeader(t *testing.T) {
 	jsonStr := string(jsonBytes)
 	if !strings.Contains(jsonStr, token) {
 		t.Errorf("didn't replace token: %s", jsonStr)
+	}
+	idTemplateValue := "http://industrialdataspace.org/resultMessage/%s"
+	if strings.Contains(jsonStr, idTemplateValue) {
+		t.Errorf("didn't replace id field: %s", jsonStr)
 	}
 	if strings.Contains(jsonStr, "%s") {
 		t.Errorf("didn't replace issued field: %s", jsonStr)
@@ -80,6 +84,13 @@ func TestBuildServerHeaderWithMalformedTemplate(t *testing.T) {
 func TestServerHeaderSerializationErrorBuilding(t *testing.T) {
 	cause := fmt.Errorf("whoa")
 	if err := serverHeaderSerializationError(cause); err == nil {
+		t.Errorf("should've build an error")
+	}
+}
+
+func TestUuidGenError(t *testing.T) {
+	cause := fmt.Errorf("whoa")
+	if err := uuidGenError(cause); err == nil {
 		t.Errorf("should've build an error")
 	}
 }
