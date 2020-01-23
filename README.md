@@ -75,6 +75,8 @@ If you call the script with an invalid token:
 
 you should get a fat permission denied back.
 
+After this manual pre-check you can exit with CTRL-C and close the involved terminal windows.
+
 
 ### Local cluster deployment
 
@@ -89,6 +91,7 @@ profile. Here's the short version, assuming you've already installed Minikube:
 
     $ cd ~
     $ minikube start --memory=16384 --cpus=4
+    # Try --memory=4096 if you don't have that much RAM, it worked for us :-)
     $ kubectl config use-context minikube
     $ curl -L https://istio.io/downloadIstio | sh -
     $ cd istio-*
@@ -96,7 +99,7 @@ profile. Here's the short version, assuming you've already installed Minikube:
     # ...ideally you should add the above to your Bash profile.
     $ istioctl manifest apply --set profile=demo
     $ kubectl -n istio-system edit cm istio
-    # ...set disablePolicyChecks to false, save & exit
+    # ...set disablePolicyChecks to false ("i" for insert mode, "ESC" ":wq" for save & exit)
     $ kubectl label namespace default istio-injection=enabled
 
 Long version:
@@ -148,9 +151,11 @@ we can get away with deploying our mock DAPS we dockerised earlier:
 
     $ kubectl apply -f deployment/mock_daps_service.yaml
 
-Wait a bit until `httpbin`, `mockdaps` and all Istio services/pods are
-alive & kicking. Then you should be able to see what HTTP headers the
-`httpbin` service gets to see when you `curl` a request:
+Wait a bit until `httpbin`, `mock
+alive & kicking. (If you don't have a beefy box, this will take a while,
+like even 5 mins, go for coffee!)
+Then you should be able to see what HTTP headers the `httpbin` service
+gets to see when you `curl` a request:
 
     $ source scripts/cluster-url.sh
     $ curl -v "$BASE_URL"/headers
@@ -199,13 +204,13 @@ You should get back a fat 403 with a message along the lines of:
 
     PERMISSION_DENIED:h1.handler.istio-system:unauthorized: invalid JWT data
 
-Like I said earlier, the adapter verifies the JWT you send is valid---see
+Like I said earlier, the adapter verifies the JWT you send as part of the IDSA-Header is valid---see
 `deployment/sample_operator_cfg.yaml`. What happens if we send a valid
 token then? Here's a valid JWT signed with the private key in the config.
 
     $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
 
-Now we can use this convenience script to stick it into an IDSA header:
+Now we can use this convenience script to stick it into a fully-fledged base64-encoded IDSA header:
 
     $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${MY_FAT_JWT}")
 
@@ -215,10 +220,8 @@ and send the header with
         -H "header:${HEADER_VALUE}"
 
 The request should go through to the target `httpbin` service
-which should reply with the HTTP headers it gets to see and there
-should be no IDSA header in the returned list since our routing
-chops that head(-er) off before sending the request on to `httpbin`.
-(But see note above about header removal!) You should also be able to
+which should reply with the HTTP headers it gets to see.
+You should be able to
 spot a `header` among the response headers: this is where we plonk in
 the IDS server token we generate. (No seriously, no pun intended, the
 response header we output, just like the request header, is also called
@@ -243,6 +246,12 @@ What you see on your terminal should be similar to:
             "X-Envoy-Internal": "true"
         }
     }
+
+Ideally, you shouldn't see the IDSA client header being echoed back
+by `httpbin` (`headers` JOSN object), yet there it is in all its glory.
+In fact, our routing was supposed to chop that head(-er) off before
+sending the request on to `httpbin` which ain't happening at the
+moment---see #11 about it.
 
 What goes in the adapter's output `header` is a Base64-encoded JSON object
 that actually holds the identity token the adapter got back from DAPS.
@@ -300,7 +309,7 @@ redo everything from a clean slate!
 
 * adapter scaffolding (done)
 * token validation (done)
-* dropping of token header before forwarding message to Orion (done)
+* dropping of token header before forwarding message to Orion (to do, see #11)
 * response token header injection (done)
 * K8s + Istio + adapter local and cloud deployment (done)
 * mutual TLS (almost there!)
