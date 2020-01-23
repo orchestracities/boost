@@ -151,7 +151,7 @@ we can get away with deploying our mock DAPS we dockerised earlier:
 
     $ kubectl apply -f deployment/mock_daps_service.yaml
 
-Wait a bit until `httpbin`, `mock
+Wait a bit until `httpbin`, `mockdaps` and all Istio services/pods are
 alive & kicking. (If you don't have a beefy box, this will take a while,
 like even 5 mins, go for coffee!)
 Then you should be able to see what HTTP headers the `httpbin` service
