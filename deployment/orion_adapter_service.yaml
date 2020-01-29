@@ -12,6 +12,10 @@ spec:
     protocol: TCP
     port: 43210
     targetPort: 43210
+  - name: http
+    protocol: TCP
+    port: 54321
+    targetPort: 54321
   selector:
     app: orionadapter
 ---
@@ -41,3 +45,6 @@ spec:
         imagePullPolicy: Never
         ports:
         - containerPort: 43210
+          name: grpc
+        - containerPort: 54321
+          name: http
