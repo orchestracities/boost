@@ -38,6 +38,12 @@ var _ od.HandleOrionadapterServiceServer = &OrionAdapter{}
 // call to our handler.
 func (s *OrionAdapter) HandleOrionadapter(ctx context.Context,
 	r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
+	if cfg, err := handler.GetConfig(r); err == nil {
+		currentAdapterConfig = cfg
+	}
+	// TODO: get rid of above code once this gets sorted:
+	// - https://github.com/orchestracities/boost/issues/24
+
 	return handler.Authorize(r)
 }
 
@@ -46,8 +52,8 @@ func (s *OrionAdapter) Addr() string {
 	return s.listener.Addr().String()
 }
 
-// Run starts the server loop and exits on receving a shutdown singnal,
-// i.e. any data sent over the shutdown channel.
+// Run starts the server loop and, on exit, sends any server error over the
+// shutdown channel.
 func (s *OrionAdapter) Run(shutdown chan error) {
 	shutdown <- s.server.Serve(s.listener)
 }

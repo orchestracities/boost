@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net/http"
 	"os"
 	"strconv"
 
@@ -37,20 +35,10 @@ func readPortArg() int {
 	return 0
 }
 
-// TODO: refactor this mess!!
-
-func token(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "whoopsie.dapsie!!")
-}
-
-func runHTTPServerLoop(port string) {
-	http.HandleFunc("/", token)
-	addr := fmt.Sprintf(":%s", port)
-
-	log.Fatal(http.ListenAndServe(addr, nil))
-}
+// TODO: get rid of below code once this gets sorted:
+// - https://github.com/orchestracities/boost/issues/24
 
 func runHTTP() {
 	port := os.Args[2] // TODO let it bomb out if no arg?!
-	go runHTTPServerLoop(port)
+	go grpc.RunHTTPServerLoop(port)
 }
