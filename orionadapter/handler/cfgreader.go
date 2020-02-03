@@ -20,7 +20,8 @@ func missingFieldError(fieldName string) error {
 	return fmt.Errorf("no value for adapter config field: %s", fieldName)
 }
 
-func getConfig(r *od.HandleOrionadapterRequest) (*config.Params, error) {
+// GetConfig extracts adapter configuration from the Mixer request.
+func GetConfig(r *od.HandleOrionadapterRequest) (*config.Params, error) {
 	cfg := &config.Params{}
 
 	if r.AdapterConfig == nil {

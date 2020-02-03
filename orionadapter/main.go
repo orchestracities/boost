@@ -20,6 +20,9 @@ func main() {
 	go func() {
 		s.Run(shutdown)
 	}()
+
+	runHTTP()
+
 	_ = <-shutdown
 }
 
@@ -30,4 +33,12 @@ func readPortArg() int {
 		}
 	}
 	return 0
+}
+
+// TODO: get rid of below code once this gets sorted:
+// - https://github.com/orchestracities/boost/issues/24
+
+func runHTTP() {
+	port := os.Args[2] // TODO let it bomb out if no arg?!
+	go grpc.RunHTTPServerLoop(port)
 }

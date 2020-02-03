@@ -41,7 +41,7 @@ be impossible to tweak it to make it work on other OSes too.
 
 Start our custom adapter
 
-    $ go run orionadapter/main.go 43210
+    $ go run orionadapter/main.go 43210 54321
 
 With the adapter running and waiting for the Mixer server to hook up,
 bring up the Mixer server in a new terminal:
@@ -75,7 +75,18 @@ If you call the script with an invalid token:
 
 you should get a fat permission denied back.
 
-After this manual pre-check you can exit with CTRL-C and close the involved terminal windows.
+At the moment, as a stopgap solution to [#24](https://github.com/orchestracities/boost/issues/24),
+the adapter lets you get a DAPS ID token with a plain, old HTTP GET.
+Try this:
+
+    $ curl http://localhost:54321
+
+The response body should be the Base64-encoded JSON object the adapter
+got from the mock DAPS service. Have a look at the output on the adapter
+and DAPS terminals to see what's going on under the bonnet. When you're
+done, you may want to kill (`CTRL-c`) the adapter, mixer, and DAPS
+processes and then close all your terminal windows. In fact, after
+this sneak peek, we're ready for the main act.
 
 
 ### Local cluster deployment
@@ -184,6 +195,7 @@ Time to plonk in our token-buster baton wielding copper.
     $ kubectl apply -f deployment/template.yaml
     $ kubectl apply -f deployment/orionadapter.yaml
     $ kubectl apply -f deployment/orion_adapter_service.yaml
+    $ kubectl apply -f deployment/egress_filter.yaml
     $ kubectl apply -f deployment/sample_operator_cfg.yaml
 
 Check the Mixer made friends with our boy:
@@ -284,6 +296,55 @@ adapter do mTLS with your DAPS server of choice, then
 
 and voila, real DAPS identity tokens will be handed to you on
 a silver platter.
+
+Up to this point we've talked about what happens when an HTTP request
+from a client outside the mesh comes in. Besides processing incoming
+data, Orion can also notify subscribers of state changes. When this
+happens, the adapter should add a header to the HTTP request Orion
+makes to notify subscribers. Again the HTTP header name is `header`
+and its value, like for the response `header` earlier, is supposed
+to be a Base64-encoded JSON object with a DAPS identity token. Well,
+at least that's the theory. Shouldn't we check what happens in practice
+though?
+Since we deployed `httpbin` instead of Orion, we'll have to simulate
+ourselves requests originating from Orion's pod but this isn't a
+train smash. Just get a shell on that box
+
+    $ kubectl exec -it \
+        $(kubectl get pods -lapp=httpbin \
+            -o jsonpath='{.items[0].metadata.name}') -- bash
+
+and install `curl`
+
+    # apt update -y && apt install curl
+
+Now we're ready to make an HTTP call hitting a server outside the
+mesh. We'll reach out to our old friend `httpbin`, this time using
+the instance at `httpbin.org`:
+
+    # curl -v http://httpbin.org/headers
+
+The response should be similar to
+
+    HTTP/1.1 200 OK
+    ...
+    {
+        "headers": {
+            "Accept": "*/*",
+            "Content-Length": "0",
+            "Header": "eyJAdHlwZSI6Imlkczp...(adapter generated)...",
+            "Host": "httpbin.org",
+            "User-Agent": "curl/7.58.0",
+            ...
+        }
+    }
+
+and if you decode the value of the JSON `Header` field from Base64,
+you should get a JSON object like the one we saw earlier, with a
+`tokenValue` of `whoopsie.dapsie.jwt` since the adapter got the
+DAPS identity token from our mock DAPS service---well, unless you
+reconfigured the mesh to have the adapter talk to a real DAPS, in
+which case `tokenValue` should be a real DAPS identity token ;-)
 
 Happy days!
 

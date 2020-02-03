@@ -18,7 +18,7 @@ import (
 func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
 	ilog.Infof("auth request: %v\n", *r)
 
-	params, err := getConfig(r)
+	params, err := GetConfig(r)
 	pubKeyPemRep, err := getIdsaPublicKey(params, err)
 	if err != nil {
 		ilog.Errorf("%v", err)
@@ -35,7 +35,7 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 		return invalidJWTError(), nil
 	}
 
-	serverToken, err := generateToken(params)
+	serverToken, err := GenerateToken(params)
 	if err != nil {
 		ilog.Errorf("error generating server token: %v\n", err)
 		return tokenGenError(), nil
@@ -52,7 +52,9 @@ func validateToken(pubKey string, headerValue string) error {
 	return token.Validate(pubKey, jwt)
 }
 
-func generateToken(p *config.Params) (string, error) {
+// GenerateToken gets a new ID token from DAPS, puts it into the configured
+// server header JSON object and then Base64 encodes the JSON object.
+func GenerateToken(p *config.Params) (string, error) {
 	daps, err := buildDapsIDRequest(p)
 	idTokenTemplate, err := getIDTokenJSONTemplate(p, err)
 	if err != nil {

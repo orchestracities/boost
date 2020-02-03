@@ -3,7 +3,7 @@
 # - https://dev.to/ivan/go-build-a-minimal-docker-image-in-just-three-steps-514i
 #
 # Build from repo root dir with:
-# 
+#
 #     $ docker build -t boost/orionadapter -f container/Dockerfile .
 #
 FROM golang:1.13.4-stretch AS builder
@@ -14,7 +14,7 @@ ENV GO111MODULE=on \
 # NOTES.
 # 1. Modules. Without telling the complier explicitly, the build will fail.
 # I wonder why I don't have to set that var when I build on MacOS though...
-# 2. CGO. We're not using any C libs from our Go code so we disable CGO. 
+# 2. CGO. We're not using any C libs from our Go code so we disable CGO.
 # Strangely enough, without doing this explicitly, I get this error when
 # running the container:
 #
@@ -55,12 +55,12 @@ FROM scratch
 COPY --chown=0:0 --from=builder /dist /
 
 # Set up the app to run as a non-root user inside the /data folder
-# User ID 65534 is usually user 'nobody'. 
+# User ID 65534 is usually user 'nobody'.
 # The executor of this image should still specify a user during setup.
 COPY --chown=65534:0 --from=builder /data /data
 USER 65534
 WORKDIR /data
 
 ENTRYPOINT ["/orionadapter"]
-CMD [ "43210" ]
-EXPOSE 43210
+CMD [ "43210", "54321" ]
+EXPOSE 43210 54321
