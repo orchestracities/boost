@@ -22,6 +22,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - base-unicode-symbols >= 0.2 && < 1
+- bytestring >= 0.10 && < 1
 - data-default >= 0.7 && < 1
 - peml >= 0.1 && < 1
 
