@@ -3,7 +3,21 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    cabal-file:
+      size: 2029
+      sha256: 2491b2853a1aa2cfd89729e89b8cff4307e939a71d5b22bb449348e1f98d3992
+    name: peml
+    version: 0.1.0.0
+    git: https://github.com/orchestracities/peml.git
+    pantry-tree:
+      size: 1358
+      sha256: 06e574a2e7bd48eb7e86c61c227c3efce0a9ed9b738de6a0d39df03857455b25
+    commit: 2ce530c7cf4d3efc2318f00e0dae244f2574d83d
+  original:
+    git: https://github.com/orchestracities/peml.git
+    commit: 2ce530c7cf4d3efc2318f00e0dae244f2574d83d
 snapshots:
 - completed:
     size: 488576

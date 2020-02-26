@@ -1,1 +1,4 @@
-# yamster
+Yamster
+=======
+> Eats YAML for breakfast.
+
