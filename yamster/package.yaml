@@ -24,7 +24,9 @@ dependencies:
 - base-unicode-symbols >= 0.2 && < 1
 - bytestring >= 0.10 && < 1
 - data-default >= 0.7 && < 1
+- directory >= 1.3 && < 2
 - peml >= 0.1 && < 1
+- shake >= 0.18 && < 1
 
 executables:
   yamster:
