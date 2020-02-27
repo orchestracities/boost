@@ -28,12 +28,14 @@ baseDirs repoRoot = BaseDirs
 data YamlTargets = YamlTargets
   { httpbin_service       ∷ FilePath
   , orion_adapter_service ∷ FilePath
+  , mongodb_service       ∷ FilePath
   }
 
 yamlTargets ∷ BaseDirs → YamlTargets
-yamlTargets BaseDirs{..} = YamlTargets
+yamlTargets BaseDirs{..}  = YamlTargets
   { httpbin_service       = deploymentDir </> "httpbin_service.yaml"
   , orion_adapter_service = deploymentDir </> "orion_adapter_service.yaml"
+  , mongodb_service       = deploymentDir </> "mongodb_service.yaml"
   }
 
 needHsSourcesIn ∷ FilePath → Action ()
@@ -54,6 +56,7 @@ deploymentFiles repoRoot = do
 
   want [ httpbin_service
        , orion_adapter_service
+       , mongodb_service
        ]
 
   httpbin_service %> \out → do
@@ -63,3 +66,7 @@ deploymentFiles repoRoot = do
   orion_adapter_service %> \out → do
     needHsSourcesIn yamsterDir
     writeServiceAndDeploymentResources out orionadapter
+
+  mongodb_service  %> \out → do
+    needHsSourcesIn yamsterDir
+    writeServiceAndDeploymentResources out mongodb

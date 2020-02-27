@@ -1,28 +1,29 @@
-#
-# WARNING: only use for testing as DB data isn't persisted!
-#
-
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongodb
   labels:
     app: mongodb
+  name: mongodb
 spec:
-  type: NodePort
   ports:
   - name: mongo
     port: 27017
+    protocol: TCP
     targetPort: 27017
   selector:
     app: mongodb
+  type: NodePort
+
 ---
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app: mongodb
   name: mongodb
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: mongodb
@@ -32,8 +33,13 @@ spec:
         app: mongodb
     spec:
       containers:
-      - name: mongodb
-        image:  mongo:3.6
-        command: ['mongod', '--bind_ip_all', '--smallfiles']
+      - command:
+        - mongod
+        - "--bind_ip_all"
+        - "--smallfiles"
+        image: "mongo:3.6"
+        imagePullPolicy: IfNotPresent
+        name: mongodb
         ports:
         - containerPort: 27017
+          name: mongo

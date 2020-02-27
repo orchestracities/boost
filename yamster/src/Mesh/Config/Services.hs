@@ -31,13 +31,24 @@ orionadapter = def
   , ports           =
     [ def { portName      = Just "grpc"
           , servicePort   = 43210
-          , containerPort = Just 43210
           }
     , def { portName      = Just "http"
           , servicePort   = 54321
-          , containerPort = Just 54321
           }
     ]
   , withSideCar = False
   }
 
+
+-- WARNING. only use for testing as DB data isn't persisted!
+mongodb ∷ ServiceSpec
+mongodb = def
+  { serviceName     = "mongodb"
+  , image           = "mongo:3.6"
+  , command         = Just "mongod --bind_ip_all --smallfiles"
+  , ports           =
+    [ def { portName      = Just "mongo"
+          , servicePort   = 27017
+          }
+    ]
+  }
