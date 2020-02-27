@@ -1,0 +1,39 @@
+#
+# WARNING: only use for testing as DB data isn't persisted!
+#
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  labels:
+    app: mongodb
+spec:
+  type: NodePort
+  ports:
+  - name: mongo
+    port: 27017
+    targetPort: 27017
+  selector:
+    app: mongodb
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image:  mongo:3.6
+        command: ['mongod', '--bind_ip_all', '--smallfiles']
+        ports:
+        - containerPort: 27017
