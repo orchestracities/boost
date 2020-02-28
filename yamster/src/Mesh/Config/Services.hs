@@ -39,7 +39,6 @@ orionadapter = def
   , withSideCar = False
   }
 
-
 -- WARNING. only use for testing as DB data isn't persisted!
 mongodb ∷ ServiceSpec
 mongodb = def
@@ -49,6 +48,21 @@ mongodb = def
   , ports           =
     [ def { portName      = Just "mongo"
           , servicePort   = 27017
+          }
+    ]
+  }
+
+orion ∷ ServiceSpec
+orion = def
+  { serviceName     = "orion"
+  , image           = "fiware/orion:2.2.0"
+  , command         = Just $
+                      "/usr/bin/contextBroker -fg -multiservice " ++
+                      "-ngsiv1Autocast -dbhost " ++ serviceName mongodb ++
+                      "-logLevel DEBUG"
+  , ports           =
+    [ def { portName      = Just "ngsi"
+          , servicePort   = 1026
           }
     ]
   }
