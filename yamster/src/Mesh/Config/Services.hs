@@ -39,6 +39,20 @@ orionadapter = def
   , withSideCar = False
   }
 
+mockdaps ∷ ServiceSpec
+mockdaps = def
+  { serviceName     = "mockdaps"
+  , image           = "boost/mockdaps:latest"
+  , imagePullPolicy = Never
+  , serviceType     = ClusterIP
+  , ports           =
+    [ def { portName      = Just "https"
+          , servicePort   = 44300
+          }
+    ]
+  , withSideCar = False
+  }
+
 -- WARNING. only use for testing as DB data isn't persisted!
 mongodb ∷ ServiceSpec
 mongodb = def
