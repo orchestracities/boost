@@ -30,6 +30,8 @@ data Port = Port
   , protocol      ∷ Protocol -- default: TCP
   , servicePort   ∷ Integer
   , containerPort ∷ Maybe Integer -- default: servicePort
+  , externalPort  ∷ Maybe Integer -- expose service if present,
+                                  -- see Istio/Ingress.hs
   }
   deriving Show
 
@@ -41,6 +43,7 @@ instance Default Port where
              , protocol      = TCP
              , servicePort   = def
              , containerPort = def
+             , externalPort  = def
              }
 
 instance ToPeml Port where

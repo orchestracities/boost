@@ -16,6 +16,7 @@ httpbin = def
     [ def { portName      = Just "http"
           , servicePort   = 8000
           , containerPort = Just 80
+          , externalPort  = Just 80
           }
     ]
   }
