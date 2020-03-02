@@ -65,6 +65,7 @@ mongodb = def
           , servicePort   = 27017
           }
     ]
+  , withSideCar = False
   }
 
 orion ∷ ServiceSpec
