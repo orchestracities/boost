@@ -39,7 +39,8 @@ spec:
         - "-multiservice"
         - "-ngsiv1Autocast"
         - "-dbhost"
-        - "mongodb-logLevel"
+        - mongodb
+        - "-logLevel"
         - DEBUG
         image: "fiware/orion:2.2.0"
         imagePullPolicy: IfNotPresent

@@ -74,7 +74,7 @@ orion = def
   , command         = Just $
                       "/usr/bin/contextBroker -fg -multiservice " ++
                       "-ngsiv1Autocast -dbhost " ++ serviceName mongodb ++
-                      "-logLevel DEBUG"
+                      " -logLevel DEBUG"
   , ports           =
     [ def { portName      = Just "ngsi"
           , servicePort   = 1026
