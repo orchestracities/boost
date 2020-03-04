@@ -8,5 +8,5 @@ import Mesh.Util.Istio
 boostGateway ∷ GatewaySpec
 boostGateway = GatewaySpec
   { gatewayName = "boost-gateway"
-  , services    = [httpbin]
+  , services    = [ httpbin, orion ]
   }

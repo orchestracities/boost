@@ -134,7 +134,11 @@ route (ServiceSpec{..}, PortRoute{..}) = do
 -- resource maps each service's external port added to the gateway to
 -- the corresponding service port in the mesh.
 --
--- For example, say you have a gateway spec with three services
+-- Notice you'll also have to make sure that external traffic to those
+-- external ports you're exposing is actually allowed into the mesh—see
+-- e.g. https://stackoverflow.com/questions/56661765/.
+--
+-- /Example/. Say you have a gateway spec with three services
 --
 -- @
 --    gw = GatewaySpec

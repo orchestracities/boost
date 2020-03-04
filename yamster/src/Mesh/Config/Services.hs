@@ -79,6 +79,28 @@ orion = def
   , ports           =
     [ def { portName      = Just "ngsi"
           , servicePort   = 1026
+          , externalPort  = Just 1026  -- (*)
           }
     ]
+  , withSideCar = False
   }
+--
+-- (*) NOTE. Custom external ports.
+-- The Istio demo profile exposes some common ports like 80 and 443
+-- through load-balancer cluster ports 30072 and 31515, respectively.
+-- We have to add our Orion port manually to the load balancer config:
+--
+--     $ EDITOR=emacs kubectl -n istio-system edit svc istio-ingressgateway
+--
+-- then add the below port to the ports section:
+--
+--     ports:
+--     ...
+--       - name: orion
+--         nodePort: 31026
+--         port: 1026
+--         protocol: TCP
+--         targetPort: 1026
+--
+-- See: https://stackoverflow.com/questions/56661765/
+--

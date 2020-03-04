@@ -29,6 +29,9 @@ spec:
       app: orion
   template:
     metadata:
+      annotations:
+        "scheduler.alpha.kubernetes.io/critical-pod": ""
+        sidecar.istio.io/inject: "false"
       labels:
         app: orion
     spec:
