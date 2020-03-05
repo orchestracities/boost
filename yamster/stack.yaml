@@ -42,6 +42,9 @@ packages:
 extra-deps:
 - git: https://github.com/orchestracities/peml.git
   commit: 2ce530c7cf4d3efc2318f00e0dae244f2574d83d
+- git: https://gitlab.com/williamyaoh/string-interpolate.git
+  commit: 46f47c1f037d13d4b8145015db82841efb7ea8da
+  #       ^ v0.2.0.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

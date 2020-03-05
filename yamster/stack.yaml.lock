@@ -18,6 +18,20 @@ packages:
   original:
     git: https://github.com/orchestracities/peml.git
     commit: 2ce530c7cf4d3efc2318f00e0dae244f2574d83d
+- completed:
+    cabal-file:
+      size: 2527
+      sha256: a96f7e744f49d795887236319f74b2797fe2cdaadf2d5c4b06845d7a6ba4dbff
+    name: string-interpolate
+    version: 0.2.0.0
+    git: https://gitlab.com/williamyaoh/string-interpolate.git
+    pantry-tree:
+      size: 1110
+      sha256: ee1836d76451f8461583bb9b601dda9dd1c4b1bcd978398f5797ee7f4347823a
+    commit: 46f47c1f037d13d4b8145015db82841efb7ea8da
+  original:
+    git: https://gitlab.com/williamyaoh/string-interpolate.git
+    commit: 46f47c1f037d13d4b8145015db82841efb7ea8da
 snapshots:
 - completed:
     size: 488576

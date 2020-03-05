@@ -5,6 +5,7 @@ module Mesh.Util.K8s
   , Protocol (..)
   , Port (..)
   , ServiceSpec (..)
+  , serviceFqn
   , service
   , deployment
   )
@@ -90,9 +91,13 @@ instance Default ServiceSpec where
                     , withSideCar     = True
                     }
 
+serviceFqn ∷ ServiceSpec → String
+serviceFqn ServiceSpec{..} = fromMaybe serviceName metaName ++ "."
+                             ++ fromMaybe "default" namespace
+
 
 service ∷ ServiceSpec → ExprBuilder
-service (ServiceSpec{..}) = do
+service ServiceSpec{..} = do
   "apiVersion" =: "v1"
   "kind" =: "Service"
   "metadata" =: do
@@ -109,7 +114,7 @@ service (ServiceSpec{..}) = do
 
 
 container ∷ ServiceSpec → ExprBuilder
-container (ServiceSpec{..}) = do
+container ServiceSpec{..} = do
   "name" =: serviceName
   "image" =: image
   "imagePullPolicy" =: show imagePullPolicy
@@ -138,7 +143,7 @@ container (ServiceSpec{..}) = do
 --
 
 sidecar ∷ ServiceSpec → ExprBuilder
-sidecar (ServiceSpec{..})
+sidecar ServiceSpec{..}
   | withSideCar = skip
   | otherwise = do
       "annotations" =: do
@@ -146,7 +151,7 @@ sidecar (ServiceSpec{..})
         "scheduler.alpha.kubernetes.io/critical-pod" =: ""
 
 deployment ∷ ServiceSpec → ExprBuilder
-deployment (spec @ ServiceSpec{..}) = do
+deployment spec @ ServiceSpec{..} = do
   "apiVersion" =: "apps/v1"
   "kind" =: "Deployment"
   "metadata" =: do

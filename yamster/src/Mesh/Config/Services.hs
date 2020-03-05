@@ -21,6 +21,11 @@ httpbin = def
     ]
   }
 
+orionadapter_http_endpoint ∷ Port
+orionadapter_http_endpoint = def { portName    = Just "http"
+                                 , servicePort = 54321
+                                 }
+
 orionadapter ∷ ServiceSpec
 orionadapter = def
   { serviceName     = "orionadapter"
@@ -33,9 +38,7 @@ orionadapter = def
     [ def { portName      = Just "grpc"
           , servicePort   = 43210
           }
-    , def { portName      = Just "http"
-          , servicePort   = 54321
-          }
+    , orionadapter_http_endpoint
     ]
   , withSideCar = False
   }

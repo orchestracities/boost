@@ -8,6 +8,7 @@ import Development.Shake
 import Development.Shake.FilePath
 import Peml
 
+import Mesh.Config.Envoy
 import Mesh.Config.Routes
 import Mesh.Config.Services
 import Mesh.Util.Istio
@@ -29,7 +30,8 @@ baseDirs repoRoot = BaseDirs
   }
 
 data YamlTargets = YamlTargets
-  { httpbin_service       ∷ FilePath
+  { egress_filter         ∷ FilePath
+  , httpbin_service       ∷ FilePath
   , ingress_routing       ∷ FilePath
   , mock_daps_service     ∷ FilePath
   , mongodb_service       ∷ FilePath
@@ -39,7 +41,8 @@ data YamlTargets = YamlTargets
 
 yamlTargets ∷ BaseDirs → YamlTargets
 yamlTargets BaseDirs{..}  = YamlTargets
-  { httpbin_service       = deploymentDir </> "httpbin_service.yaml"
+  { egress_filter         = deploymentDir </> "egress_filter.yaml"
+  , httpbin_service       = deploymentDir </> "httpbin_service.yaml"
   , ingress_routing       = deploymentDir </> "ingress_routing.yaml"
   , mock_daps_service     = deploymentDir </> "mock_daps_service.yaml"
   , mongodb_service       = deploymentDir </> "mongodb_service.yaml"
@@ -71,8 +74,10 @@ deploymentFiles repoRoot = do
   let YamlTargets{..} = yamlTargets b
   let writeS = writeServiceAndDeployment yamsterDir
   let writeR = writeRoutes yamsterDir
+  let writeE = writeExprs yamsterDir ∘ pure
 
-  want [ httpbin_service
+  want [ egress_filter
+       , httpbin_service
        , ingress_routing
        , mock_daps_service
        , mongodb_service
@@ -80,6 +85,7 @@ deploymentFiles repoRoot = do
        , orion_service
        ]
 
+  egress_filter         %> writeE orion_egress_filter
   httpbin_service       %> writeS httpbin
   ingress_routing       %> writeR boostGateway
   mock_daps_service     %> writeS mockdaps
