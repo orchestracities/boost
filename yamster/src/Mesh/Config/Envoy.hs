@@ -1,7 +1,7 @@
 {-# LANGUAGE UnicodeSyntax #-}
 {-# LANGUAGE QuasiQuotes #-}
 module Mesh.Config.Envoy
-  (orion_egress_filter)
+  (orionEgressFilter)
 where
 
 import Data.String.Interpolate (i)
@@ -37,8 +37,8 @@ adapterHttpEndpoint = do
   "port_value" =: servicePort orionadapter_http_endpoint
 
 
-orion_egress_filter ∷ ExprBuilder
-orion_egress_filter = do
+orionEgressFilter ∷ ExprBuilder
+orionEgressFilter = do
   "apiVersion" =: "networking.istio.io/v1alpha3"
   "kind" =: "EnvoyFilter"
   "metadata" =: do

@@ -85,7 +85,7 @@ deploymentFiles repoRoot = do
        , orion_service
        ]
 
-  egress_filter         %> writeE orion_egress_filter
+  egress_filter         %> writeE orionEgressFilter
   httpbin_service       %> writeS httpbin
   ingress_routing       %> writeR boostGateway
   mock_daps_service     %> writeS mockdaps
