@@ -8,7 +8,7 @@ import Data.String.Interpolate (i)
 import Peml
 
 import Mesh.Config.Adapter
-import Mesh.Config.Services (orionadapter, orionadapter_http_endpoint, httpbin)
+import Mesh.Config.Services (orionadapter, orionadapterHttpEndpoint, httpbin)
 import Mesh.Util.K8s (ServiceSpec(..), Port(..), serviceFqn)
 
 
@@ -34,7 +34,7 @@ adapterHttpEndpoint ∷ ExprBuilder
 adapterHttpEndpoint = do
   "protocol"   =: "TCP"
   "address"    =: serviceFqn orionadapter
-  "port_value" =: servicePort orionadapter_http_endpoint
+  "port_value" =: servicePort orionadapterHttpEndpoint
 
 
 orionEgressFilter ∷ ExprBuilder

@@ -214,7 +214,8 @@ See if we can still get away with an invalid token...
 
 You should get back a fat 403 with a message along the lines of:
 
-    PERMISSION_DENIED:h1.handler.istio-system:unauthorized: invalid JWT data
+    PERMISSION_DENIED:
+    orionadapter-handler.handler.istio-system:unauthorized: invalid JWT data
 
 Like I said earlier, the adapter verifies the JWT you send as part of the IDSA-Header is valid---see
 `deployment/sample_operator_cfg.yaml`. What happens if we send a valid

@@ -21,10 +21,15 @@ httpbin = def
     ]
   }
 
-orionadapter_http_endpoint ∷ Port
-orionadapter_http_endpoint = def { portName    = Just "http"
-                                 , servicePort = 54321
-                                 }
+orionadapterHttpEndpoint ∷ Port
+orionadapterHttpEndpoint = def { portName    = Just "http"
+                               , servicePort = 54321
+                               }
+
+orionadapterGrpcEndpoint ∷ Port
+orionadapterGrpcEndpoint = def { portName    = Just "grpc"
+                               , servicePort = 43210
+                               }
 
 orionadapter ∷ ServiceSpec
 orionadapter = def
@@ -34,14 +39,14 @@ orionadapter = def
   , image           = "boost/orionadapter:latest"
   , imagePullPolicy = Never
   , serviceType     = ClusterIP
-  , ports           =
-    [ def { portName      = Just "grpc"
-          , servicePort   = 43210
-          }
-    , orionadapter_http_endpoint
-    ]
+  , ports           = [ orionadapterGrpcEndpoint, orionadapterHttpEndpoint ]
   , withSideCar = False
   }
+
+mockdapsHttpsEndpoint ∷ Port
+mockdapsHttpsEndpoint = def { portName    = Just "https"
+                            , servicePort = 44300
+                            }
 
 mockdaps ∷ ServiceSpec
 mockdaps = def
@@ -49,11 +54,7 @@ mockdaps = def
   , image           = "boost/mockdaps:latest"
   , imagePullPolicy = Never
   , serviceType     = ClusterIP
-  , ports           =
-    [ def { portName      = Just "https"
-          , servicePort   = 44300
-          }
-    ]
+  , ports           = [ mockdapsHttpsEndpoint ]
   , withSideCar = False
   }
 

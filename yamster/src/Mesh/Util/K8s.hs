@@ -6,6 +6,7 @@ module Mesh.Util.K8s
   , Port (..)
   , ServiceSpec (..)
   , serviceFqn
+  , chooseServiceName
   , service
   , deployment
   )
@@ -92,9 +93,11 @@ instance Default ServiceSpec where
                     }
 
 serviceFqn ∷ ServiceSpec → String
-serviceFqn ServiceSpec{..} = fromMaybe serviceName metaName ++ "."
+serviceFqn s@ServiceSpec{..} = chooseServiceName s ++ "."
                              ++ fromMaybe "default" namespace
 
+chooseServiceName ∷ ServiceSpec → String
+chooseServiceName ServiceSpec{..} = fromMaybe serviceName metaName
 
 service ∷ ServiceSpec → ExprBuilder
 service ServiceSpec{..} = do

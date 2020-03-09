@@ -8,6 +8,8 @@ import Development.Shake
 import Development.Shake.FilePath
 import Peml
 
+import Mesh.Config.Adapter
+import Mesh.Config.AdapterPki
 import Mesh.Config.Envoy
 import Mesh.Config.Routes
 import Mesh.Config.Services
@@ -37,6 +39,7 @@ data YamlTargets = YamlTargets
   , mongodb_service       ∷ FilePath
   , orion_adapter_service ∷ FilePath
   , orion_service         ∷ FilePath
+  , sample_operator_cfg   ∷ FilePath
   }
 
 yamlTargets ∷ BaseDirs → YamlTargets
@@ -48,6 +51,7 @@ yamlTargets BaseDirs{..}  = YamlTargets
   , mongodb_service       = deploymentDir </> "mongodb_service.yaml"
   , orion_adapter_service = deploymentDir </> "orion_adapter_service.yaml"
   , orion_service         = deploymentDir </> "orion_service.yaml"
+  , sample_operator_cfg   = deploymentDir </> "sample_operator_cfg.yaml"
   }
 
 needHsSourcesIn ∷ FilePath → Action ()
@@ -67,6 +71,12 @@ writeServiceAndDeployment yamsterDir spec =
 writeRoutes ∷ FilePath → GatewaySpec → FilePath → Action ()
 writeRoutes yamsterDir = writeExprs yamsterDir ∘ routeIngressHttp
 
+writeOperatorConfig ∷ BaseDirs → FilePath → Action ()
+writeOperatorConfig BaseDirs{..} = \out → do
+  pki ← liftIO $ readOrionAdapterPki deploymentDir
+  let spec = orionAdapterSpec pki
+  writeExprs yamsterDir [handler spec, instens spec, rule spec] out
+
 deploymentFiles ∷ FilePath → Rules ()
 deploymentFiles repoRoot = do
 
@@ -83,6 +93,7 @@ deploymentFiles repoRoot = do
        , mongodb_service
        , orion_adapter_service
        , orion_service
+       , sample_operator_cfg
        ]
 
   egress_filter         %> writeE orionEgressFilter
@@ -92,3 +103,4 @@ deploymentFiles repoRoot = do
   mongodb_service       %> writeS mongodb
   orion_adapter_service %> writeS orionadapter
   orion_service         %> writeS orion
+  sample_operator_cfg   %> writeOperatorConfig b
