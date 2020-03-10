@@ -214,7 +214,8 @@ See if we can still get away with an invalid token...
 
 You should get back a fat 403 with a message along the lines of:
 
-    PERMISSION_DENIED:h1.handler.istio-system:unauthorized: invalid JWT data
+    PERMISSION_DENIED:
+    orionadapter-handler.handler.istio-system:unauthorized: invalid JWT data
 
 Like I said earlier, the adapter verifies the JWT you send as part of the IDSA-Header is valid---see
 `deployment/sample_operator_cfg.yaml`. What happens if we send a valid
@@ -347,6 +348,54 @@ reconfigured the mesh to have the adapter talk to a real DAPS, in
 which case `tokenValue` should be a real DAPS identity token ;-)
 
 Happy days!
+
+##### Deploying Orion
+
+Well, how about we do this with Orion instead of `httpbin`? Why the
+heck not. Start by deploying MongoDB:
+
+    $ kubectl apply -f deployment/mongodb_service.yaml
+
+This is a simple MongoDB service with no replication and ephemeral
+storage---i.e. your DB won't survive a pod restart---but will do
+for testing. You should wait until MongoDB is up and running before
+deploying Orion---in a prod scenario, you'd want to automate this
+with e.g. `init` containers, but hey we're just testing here :-)
+Instead of waiting around just twiddling your thumbs, edit your
+load balancer config to add an external port for Orion:
+
+    $ EDITOR=emacs kubectl -n istio-system edit svc istio-ingressgateway
+    #        ^ replace with your fave or don't set the variable to use default
+
+Then add the below port to the `ports` section:
+
+    ports:
+    ...
+      - name: orion
+        nodePort: 31026
+        port: 1026
+        protocol: TCP
+        targetPort: 1026
+
+This makes mesh gateway port `1026` reachable from outside the cluster
+through port `31026`. Next deploy Orion
+
+    $ kubectl apply -f deployment/orion_service.yaml
+
+and you're ready to play around! Here's how to get your feet wet:
+
+    $ curl -v "$(minikube ip):31026"/v2
+    # you should get back a 403/permission denied.
+
+    $ curl -v "$(minikube ip):31026"/v2 -H "header:${HEADER_VALUE}"
+    # set HEADER_VALUE as we did earlier; you should get back some
+    # JSON with Orion's API entry points.
+
+You can try adding entities, subscriptions and trigger notifications.
+It should all go without a hitch, but there's a snag: because of
+[#28](https://github.com/orchestracities/boost/issues/28), at the
+moment no IDS header gets added to Orion notification messages. But
+a fix should become available soon soon, stay tuned!
 
 ##### Cleaning up
 
