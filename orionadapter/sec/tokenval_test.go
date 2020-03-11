@@ -57,7 +57,7 @@ var malformedPubKey = []struct {
 
 func TestMalformedPubKey(t *testing.T) {
 	for _, h := range malformedPubKey {
-		if err := Validate(h.pubKey, emptyToken); err == nil {
+		if _, err := Validate(h.pubKey, emptyToken); err == nil {
 			t.Errorf("should reject malformed key: %s", h.pubKey)
 		}
 	}
@@ -75,7 +75,7 @@ var malformedToken = []struct {
 
 func TestMalformedToken(t *testing.T) {
 	for _, h := range malformedToken {
-		if err := Validate(pubKey, h.jwt); err == nil {
+		if _, err := Validate(pubKey, h.jwt); err == nil {
 			t.Errorf("should reject malformed token: %s", h.jwt)
 		}
 	}
@@ -92,7 +92,7 @@ var invalidSigningMethod = []struct {
 
 func TestInvalidSigningMethod(t *testing.T) {
 	for _, h := range invalidSigningMethod {
-		if err := Validate(pubKey, h.jwt); err == nil {
+		if _, err := Validate(pubKey, h.jwt); err == nil {
 			t.Errorf("should reject token with unsupported algo: %s", h.jwt)
 		}
 	}
@@ -109,7 +109,7 @@ var expiredToken = []struct {
 
 func TestExpiredToken(t *testing.T) {
 	for _, h := range expiredToken {
-		if err := Validate(pubKey, h.jwt); err == nil {
+		if _, err := Validate(pubKey, h.jwt); err == nil {
 			t.Errorf("should reject expired token: %s", h.jwt)
 		}
 	}
@@ -131,7 +131,7 @@ var validToken = []struct {
 
 func TestValidToken(t *testing.T) {
 	for _, h := range validToken {
-		if err := Validate(pubKey, h.jwt); err != nil {
+		if _, err := Validate(pubKey, h.jwt); err != nil {
 			t.Errorf("should accept valid token: %s", h.jwt)
 		}
 	}

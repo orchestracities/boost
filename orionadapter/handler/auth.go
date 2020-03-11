@@ -29,7 +29,7 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 	// ilog.Infof("subject props: %v", props)
 
 	// headerValue := getStringValue(props, headerName)
-	err = validateToken(pubKeyPemRep, r.Instance.ClientToken)
+	claims, err := validateToken(pubKeyPemRep, r.Instance.ClientToken)
 	if err != nil {
 		ilog.Infof("token validation failed: %v", err)
 		return invalidJWTError(), nil
@@ -41,13 +41,17 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 		return tokenGenError(), nil
 	}
 
+	if isAuthZEnabled(params) {
+
+	}
+
 	return success(serverToken), nil
 }
 
-func validateToken(pubKey string, headerValue string) error {
+func validateToken(pubKey string, headerValue string) (token.JwtPayload, error) {
 	jwt, err := token.ReadClientToken(headerValue)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return token.Validate(pubKey, jwt)
 }
