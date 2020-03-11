@@ -10,6 +10,7 @@ import (
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	token "github.com/orchestracities/boost/orionadapter/sec"
+	"github.com/orchestracities/boost/orionadapter/sec/authz"
 )
 
 // Authorize tells the Mixer if it should reject the incoming request.
@@ -42,7 +43,18 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 	}
 
 	if isAuthZEnabled(params) {
-
+		authorized, err := authorizeWithAuthZ(params, r.Instance, claims)
+		if err != nil {
+			ilog.Errorf("error authorizing with AuthZ server: %v\n", err)
+			return authzError(), nil
+		}
+		if !authorized {
+			ilog.Infof("AuthZ denied access to resource at: %v\n",
+				r.Instance.RequestPath)
+			return authzDeny(), nil
+		}
+		ilog.Infof("AuthZ authorized access to resource at: %v\n",
+			r.Instance.RequestPath)
 	}
 
 	return success(serverToken), nil
@@ -98,6 +110,34 @@ func buildDapsIDRequest(p *config.Params) (*token.DapsIDRequest, error) {
 	return r, nil
 }
 
+func authorizeWithAuthZ(p *config.Params, instance *od.InstanceMsg,
+	claims token.JwtPayload) (bool, error) {
+	serverURL, request, err := buildAuthZRequest(p, instance, claims)
+	if err != nil {
+		return false, err
+	}
+
+	client := authz.NewClient(serverURL)
+	return client.Authorize(request)
+}
+
+func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
+	claims token.JwtPayload) (string, *authz.Request, error) {
+	url, err := getAuthZServerURL(p, nil)
+	rid, err := getAuthZResourceID(p, err)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return url, &authz.Request{
+		Roles:         claims.Scopes(),
+		ResourceID:    rid,
+		ResourcePath:  instance.RequestPath,
+		FiwareService: instance.FiwareService,
+		Action:        instance.RequestMethod,
+	}, nil
+}
+
 // response generation boilerplate
 
 func success(serverToken string) *od.HandleOrionadapterResponse {
@@ -139,4 +179,12 @@ func configError() *od.HandleOrionadapterResponse {
 
 func tokenGenError() *od.HandleOrionadapterResponse {
 	return adapterErrorResponse("context broker token could not be generated")
+}
+
+func authzError() *od.HandleOrionadapterResponse {
+	return adapterErrorResponse("failed to perform AuthZ check")
+}
+
+func authzDeny() *od.HandleOrionadapterResponse {
+	return permissionDeniedResponse("AuthZ denied authorization")
 }
