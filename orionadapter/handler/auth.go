@@ -17,7 +17,7 @@ import (
 // We go ahead with the request only if it contains a valid IDS-DTH
 // token.
 func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
-	ilog.Infof("auth request: %v\n", *r)
+	ilog.Infof("auth request: %v\n", r.Instance)
 
 	params, err := GetConfig(r)
 	pubKeyPemRep, err := getIdsaPublicKey(params, err)
@@ -116,6 +116,8 @@ func authorizeWithAuthZ(p *config.Params, instance *od.InstanceMsg,
 	if err != nil {
 		return false, err
 	}
+
+	ilog.Infof("requesting permission from AuthZ: %+v\n", request)
 
 	client := authz.NewClient(serverURL)
 	return client.Authorize(request)
