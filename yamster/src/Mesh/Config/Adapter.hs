@@ -21,6 +21,9 @@ import Mesh.Util.K8s (ServiceSpec(..), Port(..), chooseServiceName, serviceFqn)
 idsSecHeaderName ∷ String
 idsSecHeaderName = "header"
 
+fiwareServiceHeaderName ∷ String
+fiwareServiceHeaderName = "fiware-service"
+
 
 -- collect data to generate orionadapter Istio resources.
 data OrionAdapterSpec = OrionAdapterSpec
@@ -75,11 +78,20 @@ instance AdapterSpec OrionAdapterSpec where
       "private_key" =: connectorPrivateKey pki
       "connector_certificate" =: connectorCertificate pki
       "server_certificate" =: dapsServerCertificate pki
+    "authz" =: do
+      "enabled" =: False
+      "server_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains/CYYY_V2IEeqMJKbegCuurA/pdp"
+      "resource_id" =: "b3a4a7d2-ce61-471f-b05d-fb82452ae686"
 
   templateName = const "oriondata"
 
   instanceParams _ = do
-    "client_token" =: ("request.headers[\"" ++ idsSecHeaderName ++ "\"]")
+    "request_method" =: "request.method"
+    "request_path" =: "request.path"
+    "fiware_service" =: header fiwareServiceHeaderName
+    "client_token" =: header idsSecHeaderName
+    where
+      header name = "request.headers[\"" ++ name ++ "\"] | \"\""
 
   handlerResponseName = const "adapter_response"
 
