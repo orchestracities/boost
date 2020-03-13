@@ -24,9 +24,22 @@ func fromMapClaims(t *jwt.Token) JwtPayload {
 // slice.
 func (p JwtPayload) Scopes() []string {
 	switch scopes := p["scopes"].(type) {
-	case []string:
-		return ([]string)(scopes)
+	case []interface{}:
+		return maybeStringSlice(scopes)
 	default:
 		return []string{}
 	}
+}
+
+func maybeStringSlice(xs []interface{}) []string {
+	size := len(xs)
+	ys := make([]string, size, size)
+	for i, x := range xs {
+		if y, ok := x.(string); ok {
+			ys[i] = y
+		} else {
+			return []string{}
+		}
+	}
+	return ys
 }
