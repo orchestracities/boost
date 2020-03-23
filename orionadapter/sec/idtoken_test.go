@@ -36,7 +36,7 @@ func TestCanBuildValidRequestToken(t *testing.T) {
 	if err != nil {
 		t.Errorf("should've built a JWT: %v", err)
 	}
-	if err := Validate(pubKey, requestJWT); err != nil {
+	if _, err := Validate(pubKey, requestJWT); err != nil {
 		t.Errorf("should've built a valid JWT: %v", err)
 	}
 }

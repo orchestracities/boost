@@ -29,6 +29,16 @@ message Daps {
     string server_host = 7;
 }
 
+// config for using an AuthZ to authorise access to Orion resources.
+message AuthZ {
+    // should the adapter use AuthZ?
+    bool enabled = 1;
+    // AuthZ authorisation endpoint.
+    string server_url = 2;
+    // TODO: should this be the same as Daps.connector_id?
+    string resource_id = 3;
+}
+
 // config for orionadapter
 message Params {
 
@@ -47,4 +57,7 @@ message Params {
     // template for the JSON holding the ID token the connector got
     // from DAPS.
     string id_token_json_template = 4;
+
+    // config for using an AuthZ to authorise access.
+    AuthZ authz = 5;
 }

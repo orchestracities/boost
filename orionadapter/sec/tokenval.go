@@ -3,6 +3,7 @@ package token
 import (
 	"crypto/rsa"
 	"fmt"
+
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -72,14 +73,14 @@ For a better explanation of the problem, see e.g.
 //    { alg: RS256 }.{ exp: 0 }.valid-rs256-signature
 // passes validation even though it expired at the beginning of the epoch!
 // Oh well.
-func Validate(pubKeyPemRep string, jwtData string) error {
+func Validate(pubKeyPemRep string, jwtData string) (JwtPayload, error) {
 	key, err := toRsaPubKey(pubKeyPemRep)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = jwt.Parse(jwtData, ensureRsaSigning(key))
+	token, err := jwt.Parse(jwtData, ensureRsaSigning(key))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return fromMapClaims(token), nil
 }

@@ -124,6 +124,14 @@ it (i.e. set `disablePolicyChecks` to `false`) but it doesn't nor does it
 work to specify that option at installation time which is why you'll have
 to manually edit the K8s config after applying the Istio `demo` profile.
 
+**Tip**. *Istio Dashboard*. If you're looking for an easy way to see
+what's going on in your mesh (services, logs, config, etc.), why not
+use the Kiali dashboard installed with the demo profile? Try
+
+    $ istioctl dashboard kiali
+
+Log in with user `admin` and password `admin`.
+
 ##### Adapter and mock DAPS images
 
 Let's "Dockerise" our adapter so we can run it on the freshly minted Istio
@@ -214,11 +222,13 @@ See if we can still get away with an invalid token...
 
 You should get back a fat 403 with a message along the lines of:
 
-    PERMISSION_DENIED:h1.handler.istio-system:unauthorized: invalid JWT data
+    PERMISSION_DENIED:
+    orionadapter-handler.handler.istio-system:unauthorized: invalid JWT data
 
 Like I said earlier, the adapter verifies the JWT you send as part of the IDSA-Header is valid---see
 `deployment/sample_operator_cfg.yaml`. What happens if we send a valid
-token then? Here's a valid JWT signed with the private key in the config.
+token then? Here's a valid JWT signed with the private key in the config
+(`idsa_private_key` field).
 
     $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
 
@@ -347,6 +357,124 @@ reconfigured the mesh to have the adapter talk to a real DAPS, in
 which case `tokenValue` should be a real DAPS identity token ;-)
 
 Happy days!
+
+##### Deploying Orion
+
+Well, how about we do this with Orion instead of `httpbin`? Why the
+heck not. Start by deploying MongoDB:
+
+    $ kubectl apply -f deployment/mongodb_service.yaml
+
+This is a simple MongoDB service with no replication and ephemeral
+storage---i.e. your DB won't survive a pod restart---but will do
+for testing. You should wait until MongoDB is up and running before
+deploying Orion---in a prod scenario, you'd want to automate this
+with e.g. `init` containers, but hey we're just testing here :-)
+Instead of waiting around just twiddling your thumbs, edit your
+load balancer config to add an external port for Orion:
+
+    $ EDITOR=emacs kubectl -n istio-system edit svc istio-ingressgateway
+    #        ^ replace with your fave or don't set the variable to use default
+
+Then add the below port to the `ports` section:
+
+    ports:
+    ...
+      - name: orion
+        nodePort: 31026
+        port: 1026
+        protocol: TCP
+        targetPort: 1026
+
+This makes mesh gateway port `1026` reachable from outside the cluster
+through port `31026`. Next deploy Orion
+
+    $ kubectl apply -f deployment/orion_service.yaml
+
+and you're ready to play around! Here's how to get your feet wet:
+
+    $ curl -v "$(minikube ip):31026/v2"
+    # you should get back a 403/permission denied.
+
+    $ curl -v "$(minikube ip):31026/v2" -H "header:${HEADER_VALUE}"
+    # set HEADER_VALUE as we did earlier; you should get back some
+    # JSON with Orion's API entry points.
+
+You can try adding entities, subscriptions and trigger notifications.
+It should all go without a hitch, but there's a snag: because of
+[#28](https://github.com/orchestracities/boost/issues/28), at the
+moment no IDS header gets added to Orion notification messages. But
+a fix should become available soon soon, stay tuned!
+
+##### Access-control with AuthZ
+
+Time to up the ante in the access-control war. We're going to require
+CIA clearance now before you can access HTTP resources---in case that
+wasn't obvious to you too, CIA stands for Control of Internet Access,
+of course, what else?! We have an AuthZ test server at
+
+* http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains/CYYY_V2IEeqMJKbegCuurA/pdp
+
+configured with an XACML policy that only lets users in roles `role0`
+through `role3` `GET` Orion resources through an application identified
+by a resource ID of `b3a4a7d2-ce61-471f-b05d-fb82452ae686`, i.e. our
+Mr Adapter the Constable. Also, the policy only gives the green light
+if the resource the user is trying to access belongs to the `service`
+tenant.
+
+With default config, the adapter won't ask AuthZ to authorize calls:
+if the incoming token is valid, the request gets forwarded to Orion.
+But you can change that in a flash. Edit `sample_operator_cfg.yaml`
+to set the `authz/enable` flag to `true`, then
+
+    $ kubectl apply -f deployment/sample_operator_cfg.yaml
+
+Now whenever a request comes in, after okaying the client token in the
+`header` header, the adapter will submit an authorization request to
+AuthZ with the below data:
+
+* *Resource ID*. Taken from `authz` config section.
+* *Resource Path*. The incoming request path, e.g. `/v2/entities?id=1`.
+* *Action*. Request verb, e.g. `GET`.
+* *Tenant*. Content of the request's `Fiware-Service` header if any.
+* *Roles*. User roles extracted from the `scopes` claim, if any, in
+  the incoming JWT token payload.
+
+Let's see it in action. Try resubmitting the request we made earlier
+to get Orion's API entry points
+
+    $ curl -v "$(minikube ip):31026/v2" -H "header:${HEADER_VALUE}"
+
+and, surprise, surprise, the adapter should show you the door this
+time (the boy ain't got no manners!) with a `403` and a message like
+
+    PERMISSION_DENIED:
+    orionadapter-handler.handler.istio-system:unauthorized:
+    AuthZ denied authorization
+
+Let's see if we can get through. Since AuthZ expects the user to be
+in `role0` through `role3` and the request to target the `service`
+tenant, we'll need to change our request so it holds that data too.
+So we're going to use a JWT with a `scopes` claim set to `[role0, role1,
+role2, role3]` and add a `Fiware-Service` header. Here's the JWT,
+signed with the private key in the adapter config---look for the
+`idsa_private_key` field in `sample_operator_cfg.yaml`.
+
+    $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.eyJzY29wZXMiOlsicm9sZTAiLCJyb2xlMSIsInJvbGUyIiwicm9sZTMiXX0.JN66SWLPqNg7pqTFRcryo-3lX4V4BNKG5bZD3SDne4B3qV5kS-5NNW5wFkty870NFjuXP_nCxg3ayOCe8YZab3kRieaCeygVJwc2i1iUEHmYqKz6jx2EecfM2VbechaapDOFc9k01S5ea1t7fSHFsJsDWpVPpCJZBAv1ikPZrv88-7PLOacdGum--0-0gI6LGaXIFiTIAzbdeJ5V-ikIK7CgLJFaR3Ib5MwGRjrGTaPqQGE62SVpATphRhSJIfXm18ViF2fG7KTGPBYGY3rxAdy6l3klpKuxA0ATQRZJ39mpjrgbf-WVlvH_9nSFAn9BvLiSJohpSMmoJTX7ToWA0g
+
+Just like we did earlier, we use the same convenience script to get
+the base64-encoded IDSA header
+
+    $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${MY_FAT_JWT}")
+
+and we're ready to try our luck
+
+    $ curl -v "$(minikube ip):31026/v2" \
+           -H "header:${HEADER_VALUE}"  \
+           -H "Fiware-Service:service"
+
+If everything went according to plan, you're looking at a `200`
+response on your terminal with the JSON body returned by Orion :-)
 
 ##### Cleaning up
 

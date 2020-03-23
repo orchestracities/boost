@@ -120,3 +120,28 @@ func getIDTokenJSONTemplate(p *config.Params, e error) (string, error) {
 	}
 	return ensureString("IdTokenJsonTemplate", p.IdTokenJsonTemplate)
 }
+
+func getAuthZ(p *config.Params) *config.AuthZ {
+	if p.Authz != nil {
+		return p.Authz
+	}
+	return &config.AuthZ{}
+}
+
+func isAuthZEnabled(p *config.Params) bool {
+	return getAuthZ(p).Enabled
+}
+
+func getAuthZServerURL(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("AuthZ.ServerURL", getAuthZ(p).ServerUrl)
+}
+
+func getAuthZResourceID(p *config.Params, e error) (string, error) {
+	if e != nil {
+		return "", e
+	}
+	return ensureString("AuthZ.ResourceID", getAuthZ(p).ResourceId)
+}
