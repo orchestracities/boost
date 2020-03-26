@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func newC(t *testing.T) *rcache {
+func newC(t *testing.T) cache {
 	c, err := newRCache(1, nil)
 	if err != nil {
 		t.Errorf("failed to instantiate cache: %v", err)
@@ -15,13 +15,13 @@ func newC(t *testing.T) *rcache {
 	return c
 }
 
-func assertKeep(t *testing.T, c *rcache, key, val string) {
+func assertKeep(t *testing.T, c cache, key, val string) {
 	if ok := c.keep(key, val); !ok {
 		t.Errorf("didn't keep (%v, %v)", key, val)
 	}
 }
 
-func assertLookup(t *testing.T, c *rcache, key, expectedVal string) {
+func assertLookup(t *testing.T, c cache, key, expectedVal string) {
 	got, found := c.lookup(key)
 	if !found {
 		t.Errorf("found = false, got: %v", got)
