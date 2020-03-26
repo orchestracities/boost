@@ -3,6 +3,7 @@ module github.com/orchestracities/boost
 go 1.13
 
 require (
+	github.com/dgraph-io/ristretto v0.0.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gogo/protobuf v1.3.0
 	github.com/google/uuid v1.1.1
