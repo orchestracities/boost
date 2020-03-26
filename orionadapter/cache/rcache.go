@@ -61,11 +61,20 @@ func (c *rcache) put(key string, value interface{}, cost int64,
 	ttl := time.Duration(ttlSeconds) * time.Second
 
 	c.backend.Del(key)
-	return c.backend.SetWithTTL(key, value, cost, ttl)
+	if ttl > 0 {
+		return c.backend.SetWithTTL(key, value, cost, ttl)
+	}
+	return false
+	// NOTE. TTL. A TTL of 0 to Ristretto means: value never expires. But
+	// to us, it means expired, hence the if above.
 }
 
 func (c *rcache) keep(key string, value interface{}) (ok bool) {
-	return c.put(key, value, 1, 0)
+	if c == nil {
+		return false
+	}
+	c.backend.Del(key) // zap old entry if any since set may fail to add
+	return c.backend.SetWithTTL(key, value, 1, 0)
 	// NOTE.
 	// * Cost. A cost of 0 means: use default cost function. So we set it to 1.
 	// * TTL. A TTL of 0 means: value never expires.
