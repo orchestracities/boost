@@ -11,6 +11,7 @@ import (
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	token "github.com/orchestracities/boost/orionadapter/sec"
 	"github.com/orchestracities/boost/orionadapter/sec/authz"
+	"github.com/orchestracities/boost/orionadapter/sec/consumer"
 	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
@@ -62,7 +63,7 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 }
 
 func validateToken(pubKey string, headerValue string) (jwt.Payload, error) {
-	jwtData, err := token.ReadClientToken(headerValue)
+	jwtData, err := consumer.ReadToken(headerValue)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package token
+package consumer
 
 import (
 	"encoding/base64"
@@ -6,22 +6,22 @@ import (
 	"fmt"
 )
 
-// ClientHeader holds the parts of the IDS client header we're interested in.
-type ClientHeader struct {
+// Header holds the bits of the IDS consumer header we're interested in.
+type Header struct {
 	SecurityToken struct {
 		TokenValue string `json:"tokenValue"`
 	} `json:"securityToken"`
 }
 
-func clientHeaderFromJSON(jsonData []byte) (*ClientHeader, error) {
-	var data ClientHeader
+func consumerHeaderFromJSON(jsonData []byte) (*Header, error) {
+	var data Header
 	err := json.Unmarshal(jsonData, &data)
 	return &data, err
 }
 
-func extractClientToken(idsHeaderValue string) (string, error) {
+func extractConsumerToken(idsHeaderValue string) (string, error) {
 	jsonData := []byte(idsHeaderValue)
-	header, err := clientHeaderFromJSON(jsonData)
+	header, err := consumerHeaderFromJSON(jsonData)
 	if err != nil {
 		return "", err
 	}
@@ -36,16 +36,16 @@ func jsonValueFromBase64(idsHeaderAttr string) (string, error) {
 	return string(decodedBytes), nil
 }
 
-// ReadClientToken reads the IDS client token from the IDS header.
+// ReadToken reads the IDS consumer JWT from the IDS header.
 // The input idsHeaderAttr is the Mixer attribute that captured the value of
 // the IDS header in the incoming HTTP request.
-// The output token is the actual client token contained in the IDS header.
-func ReadClientToken(idsHeaderAttr string) (token string, err error) {
+// The output token is the actual consumer token contained in the IDS header.
+func ReadToken(idsHeaderAttr string) (token string, err error) {
 	idsHeaderValue, err := jsonValueFromBase64(idsHeaderAttr)
 	if err != nil {
 		return "", headerDecodingError(err)
 	}
-	token, err = extractClientToken(idsHeaderValue)
+	token, err = extractConsumerToken(idsHeaderValue)
 	if err != nil {
 		return "", tokenExtractionError(err)
 	}
@@ -59,6 +59,6 @@ func headerDecodingError(cause error) error {
 }
 
 func tokenExtractionError(cause error) error {
-	return fmt.Errorf("error extracting client token from IDS header: %v",
+	return fmt.Errorf("error extracting consumer token from IDS header: %v",
 		cause)
 }

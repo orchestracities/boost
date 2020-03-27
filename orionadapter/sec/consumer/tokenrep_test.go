@@ -1,4 +1,4 @@
-package token
+package consumer
 
 import (
 	"encoding/base64"
@@ -28,36 +28,36 @@ func clientJSONPayload(token string) string {
 	return fmt.Sprintf(clientJSONPayloadTemplate, token)
 }
 
-func assertReadClientToken(t *testing.T, jsonPayload string, want string) {
+func assertReadToken(t *testing.T, jsonPayload string, want string) {
 	idsHeaderAttr := toB64(jsonPayload)
-	if got, err := ReadClientToken(idsHeaderAttr); err != nil {
+	if got, err := ReadToken(idsHeaderAttr); err != nil {
 		t.Errorf("%s", err)
 	} else if got != want {
 		t.Errorf("wrong token. got: %s, want: %s", got, want)
 	}
 }
 
-func TestReadClientTokenWithToken(t *testing.T) {
+func TestReadConsumerHeaderWithToken(t *testing.T) {
 	want := "my.fat.jwt"
 	header := clientJSONPayload(want)
-	assertReadClientToken(t, header, want)
+	assertReadToken(t, header, want)
 }
 
-var readClientTokenWithoutToken = []struct {
+var readConsumerHeaderWithoutToken = []struct {
 	jsonValue string
 }{
 	{clientJSONPayload("")},
 	{`{"securityToken": {"tokenValue": null}}`},
 }
 
-func TestReadClientTokenWithoutToken(t *testing.T) {
+func TestReadConsumerHeaderWithoutToken(t *testing.T) {
 	want := ""
-	for _, k := range readClientTokenWithoutToken {
-		assertReadClientToken(t, k.jsonValue, want)
+	for _, k := range readConsumerHeaderWithoutToken {
+		assertReadToken(t, k.jsonValue, want)
 	}
 }
 
-var readClientTokenWithoutTokenValueField = []struct {
+var readConsumerHeaderWithoutTokenValueField = []struct {
 	jsonValue string
 }{
 	{`{ "securityToken": {} }`},
@@ -85,14 +85,14 @@ var readClientTokenWithoutTokenValueField = []struct {
 	},
 }
 
-func TestReadClientTokenWithoutTokenValueField(t *testing.T) {
+func TestReadConsumerHeaderWithoutTokenValueField(t *testing.T) {
 	want := ""
-	for _, k := range readClientTokenWithoutTokenValueField {
-		assertReadClientToken(t, k.jsonValue, want)
+	for _, k := range readConsumerHeaderWithoutTokenValueField {
+		assertReadToken(t, k.jsonValue, want)
 	}
 }
 
-var readClientTokenWithoutSecurityTokenField = []struct {
+var readConsumerHeaderWithoutSecurityTokenField = []struct {
 	jsonValue string
 }{
 	{`{}`},
@@ -115,44 +115,44 @@ var readClientTokenWithoutSecurityTokenField = []struct {
 	},
 }
 
-func TestReadClientTokenWithoutSecurityTokenField(t *testing.T) {
+func TestReadConsumerHeaderWithoutSecurityTokenField(t *testing.T) {
 	want := ""
-	for _, k := range readClientTokenWithoutSecurityTokenField {
-		assertReadClientToken(t, k.jsonValue, want)
+	for _, k := range readConsumerHeaderWithoutSecurityTokenField {
+		assertReadToken(t, k.jsonValue, want)
 	}
 }
 
-func TestReadClientTokenWithEmptyHeader(t *testing.T) {
+func TestReadEmptyConsumerHeader(t *testing.T) {
 	headerValue := ""
-	if _, err := ReadClientToken(headerValue); err == nil {
+	if _, err := ReadToken(headerValue); err == nil {
 		t.Error("should've returned a JSON parsing error.")
 	}
 }
 
-var readClientTokenWithMalformedHeaderValue = []struct {
+var readMalformedConsumerHeaderValue = []struct {
 	headerValue string
 }{
 	{`"`}, {`""`}, {`not base 64`}, {`{}`}, {clientJSONPayload("t.k.n")},
 }
 
-func TestReadClientTokenWithMalformedHeaderValue(t *testing.T) {
-	for _, k := range readClientTokenWithMalformedHeaderValue {
-		if _, err := ReadClientToken(k.headerValue); err == nil {
+func TestReadMalformedConsumerHeaderValue(t *testing.T) {
+	for _, k := range readMalformedConsumerHeaderValue {
+		if _, err := ReadToken(k.headerValue); err == nil {
 			t.Error("should've returned a Base 64 parsing error.")
 		}
 	}
 }
 
-var readClientTokenWithInvalidJSON = []struct {
+var readConsumerHeaderWithInvalidJSON = []struct {
 	jsonValue string
 }{
 	{`{`}, {`{{`}, {`{{}}`}, {`}`}, {`{in:valid}`},
 }
 
-func TestReadClientTokenWithInvalidJSON(t *testing.T) {
-	for _, k := range readClientTokenWithInvalidJSON {
+func TestReadConsumerHeaderWithInvalidJSON(t *testing.T) {
+	for _, k := range readConsumerHeaderWithInvalidJSON {
 		headerValue := toB64(k.jsonValue)
-		if _, err := ReadClientToken(headerValue); err == nil {
+		if _, err := ReadToken(headerValue); err == nil {
 			t.Error("should've returned a JSON parsing error.")
 		}
 	}
