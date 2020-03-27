@@ -1,4 +1,4 @@
-package token
+package daps
 
 import (
 	"crypto/tls"
@@ -22,14 +22,14 @@ func (u *baseURL) join(rest string) string {
 	return fmt.Sprintf("%s://%s%s", u.scheme, u.host, rest)
 }
 
-// DapsClient to talk to a DAPS server. Never instantiate one directly,
-// rather use NewDapsClient.
-type DapsClient struct {
+// Client to talk to a DAPS server. Never instantiate one directly,
+// rather use NewClient.
+type Client struct {
 	base *baseURL
 	conn *http.Client
 }
 
-// NewDapsClient builds an HTTP client to connect to the specified DAPS
+// NewClient builds an HTTP client to connect to the specified DAPS
 // host using mTLS. host can be either a plain host name or a host name
 // with a port number as in e.g. "whoopsie.dapsie.org:4433".
 // clientCert and clientPvtKey are, respectively, the certificate and
@@ -37,20 +37,20 @@ type DapsClient struct {
 // whereas serverCert is the DAPS server certificate the client should
 // use to authenticate the server. All of them are supposed to be in PEM
 // format.
-func NewDapsClient(host string, clientPvtKey string, clientCert string,
-	serverCert string) (*DapsClient, error) {
+func NewClient(host string, clientPvtKey string, clientCert string,
+	serverCert string) (*Client, error) {
 
 	clCert, err := tls.X509KeyPair([]byte(clientCert), []byte(clientPvtKey))
 	if err != nil {
-		return &DapsClient{}, err
+		return &Client{}, err
 	}
 
 	svrCerts := x509.NewCertPool()
 	if !svrCerts.AppendCertsFromPEM([]byte(serverCert)) {
-		return &DapsClient{}, serverCertDecodingError()
+		return &Client{}, serverCertDecodingError()
 	}
 
-	return &DapsClient{
+	return &Client{
 		base: &baseURL{
 			scheme: "https",
 			host:   host,
@@ -147,7 +147,7 @@ func handleResponse(ensureContent bool,
 //
 // If the server replies with an error or a connection error occurs,
 // you get back that error and a nil ResponseBody.
-func (c *DapsClient) PostForm(urlPath string, data url.Values,
+func (c *Client) PostForm(urlPath string, data url.Values,
 	ensureResponseBody bool) (ResponseBody, error) {
 	url := c.base.join(urlPath)
 	r, err := c.conn.PostForm(url, data)

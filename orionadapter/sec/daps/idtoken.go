@@ -1,4 +1,4 @@
-package token
+package daps
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
-// DapsIDRequest holds the data needed to request an ID token from DAPS.
-type DapsIDRequest struct {
+// IDRequest holds the data needed to request an ID token from DAPS.
+type IDRequest struct {
 	// identifies the connector within DAPS/IDS; usually a UUID.
 	ConnectorID string
 	// e.g. "https://consumerconnector.fiware.org"
@@ -28,7 +28,7 @@ type DapsIDRequest struct {
 }
 
 // build JWT to use in request to get an ID token from DAPS.
-func (r *DapsIDRequest) requestToken() (string, error) {
+func (r *IDRequest) requestToken() (string, error) {
 	return jwt.MakeRS256SignedToken(
 		r.PrivateKey, r.ConnectorID, r.ConnectorID,
 		r.ConnectorAudience, r.SecondsBeforeExpiry)
@@ -49,8 +49,8 @@ type oauthTokenResponse struct {
 }
 
 // IdentityToken requests an ID token for the connector from DAPS.
-func (r *DapsIDRequest) IdentityToken() (string, error) {
-	daps, err := NewDapsClient(r.ServerHost, r.PrivateKey,
+func (r *IDRequest) IdentityToken() (string, error) {
+	daps, err := NewClient(r.ServerHost, r.PrivateKey,
 		r.ConnectorCertificate, r.ServerCertificate)
 	if err != nil {
 		return "", dapsClientInstantiationError(err)

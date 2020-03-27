@@ -1,4 +1,4 @@
-package token
+package daps
 
 import (
 	"fmt"
@@ -51,7 +51,7 @@ y18Ae9n7dHVueyslrb6weq7dTkYDi3iOYRW8HRkIQh06wEdbxt0shTzAJvvCQfrB
 jg/3747WSsf/zBTcHihTRBdAv6OmdhV4/dD5YBfLAkLrd+mX7iE=
 -----END RSA PRIVATE KEY-----`
 
-func buildAndDecodeRequestTokenPayload(r *DapsIDRequest) (*jot.StandardClaims, error) {
+func buildAndDecodeRequestTokenPayload(r *IDRequest) (*jot.StandardClaims, error) {
 	requestJWT, err := r.requestToken()
 	if err != nil {
 		return &jot.StandardClaims{}, err
@@ -68,7 +68,7 @@ func buildAndDecodeRequestTokenPayload(r *DapsIDRequest) (*jot.StandardClaims, e
 }
 
 func TestCanBuildValidRequestToken(t *testing.T) {
-	r := &DapsIDRequest{
+	r := &IDRequest{
 		SecondsBeforeExpiry: 10,
 		PrivateKey:          privateKey,
 	}
@@ -82,7 +82,7 @@ func TestCanBuildValidRequestToken(t *testing.T) {
 }
 
 func TestCantBuildRequestTokenWithoutPvtKey(t *testing.T) {
-	r := &DapsIDRequest{
+	r := &IDRequest{
 		SecondsBeforeExpiry: 10,
 	}
 	_, err := r.requestToken()
@@ -103,7 +103,7 @@ func assertClose(t *testing.T, a int64, b int64) {
 	}
 }
 
-var requestTokenExpClaim = []DapsIDRequest{
+var requestTokenExpClaim = []IDRequest{
 	{SecondsBeforeExpiry: 0}, {SecondsBeforeExpiry: 10},
 	{SecondsBeforeExpiry: 20}, {SecondsBeforeExpiry: 3600},
 }
@@ -121,7 +121,7 @@ func TestRequestTokenExpClaim(t *testing.T) {
 }
 
 func TestRequestTokenIssClaim(t *testing.T) {
-	r := &DapsIDRequest{PrivateKey: privateKey}
+	r := &IDRequest{PrivateKey: privateKey}
 	claims, err := buildAndDecodeRequestTokenPayload(r)
 	if err != nil {
 		t.Errorf("should've built a JWT: %v", err)
@@ -131,7 +131,7 @@ func TestRequestTokenIssClaim(t *testing.T) {
 }
 
 func TestRequestTokenNbfClaim(t *testing.T) {
-	r := &DapsIDRequest{PrivateKey: privateKey}
+	r := &IDRequest{PrivateKey: privateKey}
 	claims, err := buildAndDecodeRequestTokenPayload(r)
 	if err != nil {
 		t.Errorf("should've built a JWT: %v", err)
@@ -140,7 +140,7 @@ func TestRequestTokenNbfClaim(t *testing.T) {
 	assertClose(t, now, claims.NotBefore)
 }
 
-var requestTokenIssAndSubClaims = []DapsIDRequest{
+var requestTokenIssAndSubClaims = []IDRequest{
 	{}, {ConnectorID: ""}, {ConnectorID: " "}, {ConnectorID: "x"},
 	{ConnectorID: "2d80dc4e-7dfe-449c-8e3a-ce19b41685c3"},
 }
@@ -163,7 +163,7 @@ func TestRequestTokenIssAndSubClaims(t *testing.T) {
 	}
 }
 
-var requestTokenAudClaim = []DapsIDRequest{
+var requestTokenAudClaim = []IDRequest{
 	{}, {ConnectorAudience: ""}, {ConnectorAudience: " "},
 	{ConnectorAudience: "x"},
 	{ConnectorAudience: "https://consumerconnector.fiware.org"},
@@ -184,7 +184,7 @@ func TestRequestTokenAudClaim(t *testing.T) {
 }
 
 func TestIdentityTokenErrorWhenCantBuildClient(t *testing.T) {
-	r := &DapsIDRequest{}
+	r := &IDRequest{}
 	token, err := r.IdentityToken()
 	if err == nil {
 		t.Errorf("shouldn't have discarded unusable DAPS client: %s", token)

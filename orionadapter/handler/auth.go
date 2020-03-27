@@ -9,15 +9,15 @@ import (
 
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
-	token "github.com/orchestracities/boost/orionadapter/sec"
 	"github.com/orchestracities/boost/orionadapter/sec/authz"
 	"github.com/orchestracities/boost/orionadapter/sec/consumer"
+	"github.com/orchestracities/boost/orionadapter/sec/daps"
 	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
 // Authorize tells the Mixer if it should reject the incoming request.
 // We go ahead with the request only if it contains a valid IDS-DTH
-// token.
+// token and, if enabled, AuthZ authorizes access to the target resource.
 func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
 	ilog.Infof("auth request: %v\n", r.Instance)
 
@@ -73,21 +73,21 @@ func validateToken(pubKey string, headerValue string) (jwt.Payload, error) {
 // GenerateToken gets a new ID token from DAPS, puts it into the configured
 // server header JSON object and then Base64 encodes the JSON object.
 func GenerateToken(p *config.Params) (string, error) {
-	daps, err := buildDapsIDRequest(p)
+	request, err := buildDapsIDRequest(p)
 	idTokenTemplate, err := getIDTokenJSONTemplate(p, err)
 	if err != nil {
 		return "", err
 	}
 
-	idToken, err := daps.IdentityToken()
+	idToken, err := request.IdentityToken()
 	if err != nil {
 		return "", err
 	}
 
-	return token.BuildServerHeader(idTokenTemplate, idToken)
+	return daps.BuildProviderHeader(idTokenTemplate, idToken)
 }
 
-func buildDapsIDRequest(p *config.Params) (*token.DapsIDRequest, error) {
+func buildDapsIDRequest(p *config.Params) (*daps.IDRequest, error) {
 	connectorID, err := getDapsConnectorID(p, nil)
 	connectorAudience, err := getDapsConnectorAudience(p, err)
 	secondsBeforeExpiry, err := getDapsSecondsBeforeExpiry(p, err)
@@ -100,7 +100,7 @@ func buildDapsIDRequest(p *config.Params) (*token.DapsIDRequest, error) {
 		return nil, err
 	}
 
-	r := &token.DapsIDRequest{
+	r := &daps.IDRequest{
 		ConnectorID:          connectorID,
 		ConnectorAudience:    connectorAudience,
 		SecondsBeforeExpiry:  secondsBeforeExpiry,
