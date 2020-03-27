@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/orchestracities/boost/orionadapter/grpc"
+	grpc "github.com/orchestracities/boost/orionadapter/endpoint"
 )
 
 func main() {

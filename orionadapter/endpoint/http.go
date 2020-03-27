@@ -1,4 +1,4 @@
-package grpc
+package endpoint
 
 // TODO: stop gap solution to https://github.com/orchestracities/boost/issues/24
 // Sort out egress routing, then ditch this code and the Envoy filter.
