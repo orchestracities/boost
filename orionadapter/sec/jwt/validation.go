@@ -12,21 +12,6 @@ func unexpectedSigningMethodError(algo interface{}) *jot.ValidationError {
 	return jot.NewValidationError(msg, jot.ValidationErrorSignatureInvalid)
 }
 
-func invalidPubKeyError(cause error) *jot.ValidationError {
-	msg := fmt.Sprintf("invalid public key: %v", cause)
-	return jot.NewValidationError(msg, jot.ValidationErrorUnverifiable)
-}
-
-// ToRsaPubKey parses an RSA public key in PEM format.
-func ToRsaPubKey(pemRep string) (*rsa.PublicKey, error) {
-	keyBytes := []byte(pemRep)
-	key, err := jot.ParseRSAPublicKeyFromPEM(keyBytes)
-	if err != nil {
-		return nil, invalidPubKeyError(err)
-	}
-	return key, nil
-}
-
 func ensureRsaSigning(key *rsa.PublicKey) jot.Keyfunc {
 	return func(t *jot.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jot.SigningMethodRSA); !ok {

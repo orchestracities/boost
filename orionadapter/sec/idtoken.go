@@ -1,22 +1,11 @@
 package token
 
 import (
-	"crypto/rsa"
 	"fmt"
 	"net/url"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
-
-func toRsaPvtKey(pemRep string) (*rsa.PrivateKey, error) {
-	keyBytes := []byte(pemRep)
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyBytes)
-	if err != nil {
-		return nil, invalidPvtKeyError(err)
-	}
-	return key, nil
-}
 
 // DapsIDRequest holds the data needed to request an ID token from DAPS.
 type DapsIDRequest struct {
@@ -38,27 +27,11 @@ type DapsIDRequest struct {
 	ServerHost string
 }
 
-func (r *DapsIDRequest) standardClaims() *jwt.StandardClaims {
-	now := time.Now().Unix()
-	return &jwt.StandardClaims{
-		IssuedAt:  now,
-		NotBefore: now,
-		ExpiresAt: now + int64(r.SecondsBeforeExpiry),
-		Subject:   r.ConnectorID,
-		Issuer:    r.ConnectorID,
-		Audience:  r.ConnectorAudience,
-	}
-}
-
 // build JWT to use in request to get an ID token from DAPS.
 func (r *DapsIDRequest) requestToken() (string, error) {
-	key, err := toRsaPvtKey(r.PrivateKey)
-	if err != nil {
-		return "", err
-	}
-	claims := r.standardClaims()
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	return token.SignedString(key)
+	return jwt.MakeRS256SignedToken(
+		r.PrivateKey, r.ConnectorID, r.ConnectorID,
+		r.ConnectorAudience, r.SecondsBeforeExpiry)
 }
 
 func buildOauthRequest(requestToken string) url.Values {
@@ -106,11 +79,6 @@ func (r *DapsIDRequest) IdentityToken() (string, error) {
 }
 
 // errors boilerplate
-
-func invalidPvtKeyError(cause error) *jwt.ValidationError {
-	msg := fmt.Sprintf("invalid private key: %v", cause)
-	return jwt.NewValidationError(msg, jwt.ValidationErrorUnverifiable)
-}
 
 func dapsClientInstantiationError(cause error) error {
 	return fmt.Errorf("can't instantiate DAPS client: %v", cause)
