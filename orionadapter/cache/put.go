@@ -2,8 +2,8 @@ package cache
 
 import (
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
-	token "github.com/orchestracities/boost/orionadapter/sec"
 	"github.com/orchestracities/boost/orionadapter/sec/authz"
+	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
 // PutAdapterConfig caches adapter config. Use the ok flag to tell if the
@@ -17,22 +17,22 @@ func PutAdapterConfig(params *config.Params) (ok bool) {
 
 // PutDapsIDToken caches a DAPS ID token. Use the ok flag to tell if the
 // operation was successful.
-func PutDapsIDToken(jwt string) (ok bool) {
-	if len(jwt) == 0 {
+func PutDapsIDToken(jwtData string) (ok bool) {
+	if len(jwtData) == 0 {
 		return false
 	}
-	ttl := token.FromRaw(jwt).ExpiresIn()
-	return cached.Daps().put(dapsIDTokenKey, jwt, 1, ttl)
+	ttl := jwt.FromRaw(jwtData).ExpiresIn()
+	return cached.Daps().put(dapsIDTokenKey, jwtData, 1, ttl)
 }
 
 // PutAuthZDecision caches an AuthZ decision. Use the ok flag to tell if the
 // operation was successful.
 func PutAuthZDecision(idsClientHeader string, callParams *authz.Request,
 	authorized bool) (ok bool) {
-	key, jwt, err := authZCallKey(idsClientHeader, callParams)
+	key, jwtData, err := authZCallKey(idsClientHeader, callParams)
 	if err != nil {
 		return false
 	}
-	ttl := token.FromRaw(jwt).ExpiresIn()
+	ttl := jwt.FromRaw(jwtData).ExpiresIn()
 	return cached.AuthZ().put(key, authorized, 1, ttl)
 }

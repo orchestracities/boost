@@ -1,34 +1,35 @@
-package token
+package jwt
 
 import (
 	"crypto/rsa"
 	"fmt"
 
-	"github.com/dgrijalva/jwt-go"
+	jot "github.com/dgrijalva/jwt-go"
 )
 
-func unexpectedSigningMethodError(algo interface{}) *jwt.ValidationError {
+func unexpectedSigningMethodError(algo interface{}) *jot.ValidationError {
 	msg := fmt.Sprintf("unexpected signing method: %v", algo)
-	return jwt.NewValidationError(msg, jwt.ValidationErrorSignatureInvalid)
+	return jot.NewValidationError(msg, jot.ValidationErrorSignatureInvalid)
 }
 
-func invalidPubKeyError(cause error) *jwt.ValidationError {
+func invalidPubKeyError(cause error) *jot.ValidationError {
 	msg := fmt.Sprintf("invalid public key: %v", cause)
-	return jwt.NewValidationError(msg, jwt.ValidationErrorUnverifiable)
+	return jot.NewValidationError(msg, jot.ValidationErrorUnverifiable)
 }
 
-func toRsaPubKey(pemRep string) (*rsa.PublicKey, error) {
+// ToRsaPubKey parses an RSA public key in PEM format.
+func ToRsaPubKey(pemRep string) (*rsa.PublicKey, error) {
 	keyBytes := []byte(pemRep)
-	key, err := jwt.ParseRSAPublicKeyFromPEM(keyBytes)
+	key, err := jot.ParseRSAPublicKeyFromPEM(keyBytes)
 	if err != nil {
 		return nil, invalidPubKeyError(err)
 	}
 	return key, nil
 }
 
-func ensureRsaSigning(key *rsa.PublicKey) jwt.Keyfunc {
-	return func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
+func ensureRsaSigning(key *rsa.PublicKey) jot.Keyfunc {
+	return func(t *jot.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jot.SigningMethodRSA); !ok {
 			return nil, unexpectedSigningMethodError(t.Header["alg"])
 		}
 		return key, nil
@@ -73,12 +74,12 @@ For a better explanation of the problem, see e.g.
 //    { alg: RS256 }.{ exp: 0 }.valid-rs256-signature
 // passes validation even though it expired at the beginning of the epoch!
 // Oh well.
-func Validate(pubKeyPemRep string, jwtData string) (JwtPayload, error) {
-	key, err := toRsaPubKey(pubKeyPemRep)
+func Validate(pubKeyPemRep string, jwtData string) (Payload, error) {
+	key, err := ToRsaPubKey(pubKeyPemRep)
 	if err != nil {
 		return nil, err
 	}
-	token, err := jwt.Parse(jwtData, ensureRsaSigning(key))
+	token, err := jot.Parse(jwtData, ensureRsaSigning(key))
 	if err != nil {
 		return nil, err
 	}

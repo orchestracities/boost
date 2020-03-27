@@ -11,6 +11,7 @@ import (
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	token "github.com/orchestracities/boost/orionadapter/sec"
 	"github.com/orchestracities/boost/orionadapter/sec/authz"
+	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
 // Authorize tells the Mixer if it should reject the incoming request.
@@ -60,12 +61,12 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 	return success(serverToken), nil
 }
 
-func validateToken(pubKey string, headerValue string) (token.JwtPayload, error) {
-	jwt, err := token.ReadClientToken(headerValue)
+func validateToken(pubKey string, headerValue string) (jwt.Payload, error) {
+	jwtData, err := token.ReadClientToken(headerValue)
 	if err != nil {
 		return nil, err
 	}
-	return token.Validate(pubKey, jwt)
+	return jwt.Validate(pubKey, jwtData)
 }
 
 // GenerateToken gets a new ID token from DAPS, puts it into the configured
@@ -111,7 +112,7 @@ func buildDapsIDRequest(p *config.Params) (*token.DapsIDRequest, error) {
 }
 
 func authorizeWithAuthZ(p *config.Params, instance *od.InstanceMsg,
-	claims token.JwtPayload) (bool, error) {
+	claims jwt.Payload) (bool, error) {
 	serverURL, request, err := buildAuthZRequest(p, instance, claims)
 	if err != nil {
 		return false, err
@@ -124,7 +125,7 @@ func authorizeWithAuthZ(p *config.Params, instance *od.InstanceMsg,
 }
 
 func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
-	claims token.JwtPayload) (string, *authz.Request, error) {
+	claims jwt.Payload) (string, *authz.Request, error) {
 	url, err := getAuthZServerURL(p, nil)
 	rid, err := getAuthZResourceID(p, err)
 	if err != nil {
