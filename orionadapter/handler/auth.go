@@ -5,141 +5,35 @@ import (
 
 	iad "istio.io/api/mixer/adapter/model/v1beta1"
 	"istio.io/istio/mixer/pkg/status"
-	ilog "istio.io/pkg/log"
 
-	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
-	"github.com/orchestracities/boost/orionadapter/sec/authz"
-	"github.com/orchestracities/boost/orionadapter/sec/consumer"
-	"github.com/orchestracities/boost/orionadapter/sec/daps"
-	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
 // Authorize tells the Mixer if it should reject the incoming request.
 // We go ahead with the request only if it contains a valid IDS-DTH
 // token and, if enabled, AuthZ authorizes access to the target resource.
 func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
-	ilog.Infof("auth request: %v\n", r.Instance)
-
-	params, err := GetConfig(r)
-	pubKeyPemRep, err := getIdsaPublicKey(params, err)
+	params, err := extractConfig(r)
 	if err != nil {
-		ilog.Errorf("%v", err)
-		return configError(), nil
+		return err, nil
 	}
 
-	// props := toMap(r.Instance.Subject.Properties)
-	// ilog.Infof("subject props: %v", props)
-
-	// headerValue := getStringValue(props, headerName)
-	claims, err := validateToken(pubKeyPemRep, r.Instance.ClientToken)
+	claims, err := validateConsumer(r, params)
 	if err != nil {
-		ilog.Infof("token validation failed: %v", err)
-		return invalidJWTError(), nil
+		return err, nil
 	}
 
-	serverToken, err := GenerateToken(params)
+	providerHeader, err := generateProviderHeader(params)
 	if err != nil {
-		ilog.Errorf("error generating server token: %v\n", err)
-		return tokenGenError(), nil
+		return err, nil
 	}
 
-	if isAuthZEnabled(params) {
-		authorized, err := authorizeWithAuthZ(params, r.Instance, claims)
-		if err != nil {
-			ilog.Errorf("error authorizing with AuthZ server: %v\n", err)
-			return authzError(), nil
-		}
-		if !authorized {
-			ilog.Infof("AuthZ denied access to resource at: %v\n",
-				r.Instance.RequestPath)
-			return authzDeny(), nil
-		}
-		ilog.Infof("AuthZ authorized access to resource at: %v\n",
-			r.Instance.RequestPath)
-	}
-
-	return success(serverToken), nil
-}
-
-func validateToken(pubKey string, headerValue string) (jwt.Payload, error) {
-	jwtData, err := consumer.ReadToken(headerValue)
+	err = authorizeWithAuthZ(r, params, claims)
 	if err != nil {
-		return nil, err
-	}
-	return jwt.Validate(pubKey, jwtData)
-}
-
-// GenerateToken gets a new ID token from DAPS, puts it into the configured
-// server header JSON object and then Base64 encodes the JSON object.
-func GenerateToken(p *config.Params) (string, error) {
-	request, err := buildDapsIDRequest(p)
-	idTokenTemplate, err := getIDTokenJSONTemplate(p, err)
-	if err != nil {
-		return "", err
+		return err, nil
 	}
 
-	idToken, err := request.IdentityToken()
-	if err != nil {
-		return "", err
-	}
-
-	return daps.BuildProviderHeader(idTokenTemplate, idToken)
-}
-
-func buildDapsIDRequest(p *config.Params) (*daps.IDRequest, error) {
-	connectorID, err := getDapsConnectorID(p, nil)
-	connectorAudience, err := getDapsConnectorAudience(p, err)
-	secondsBeforeExpiry, err := getDapsSecondsBeforeExpiry(p, err)
-	privateKey, err := getDapsPrivateKey(p, err)
-	connectorCertificate, err := getDapsConnectorCertificate(p, err)
-	serverCertificate, err := getDapsServerCertificate(p, err)
-	serverHost, err := getDapsServerHost(p, err)
-
-	if err != nil {
-		return nil, err
-	}
-
-	r := &daps.IDRequest{
-		ConnectorID:          connectorID,
-		ConnectorAudience:    connectorAudience,
-		SecondsBeforeExpiry:  secondsBeforeExpiry,
-		PrivateKey:           privateKey,
-		ConnectorCertificate: connectorCertificate,
-		ServerCertificate:    serverCertificate,
-		ServerHost:           serverHost,
-	}
-	return r, nil
-}
-
-func authorizeWithAuthZ(p *config.Params, instance *od.InstanceMsg,
-	claims jwt.Payload) (bool, error) {
-	serverURL, request, err := buildAuthZRequest(p, instance, claims)
-	if err != nil {
-		return false, err
-	}
-
-	ilog.Infof("requesting permission from AuthZ: %+v\n", request)
-
-	client := authz.NewClient(serverURL)
-	return client.Authorize(request)
-}
-
-func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
-	claims jwt.Payload) (string, *authz.Request, error) {
-	url, err := getAuthZServerURL(p, nil)
-	rid, err := getAuthZResourceID(p, err)
-	if err != nil {
-		return "", nil, err
-	}
-
-	return url, &authz.Request{
-		Roles:         claims.Scopes(),
-		ResourceID:    rid,
-		ResourcePath:  instance.RequestPath,
-		FiwareService: instance.FiwareService,
-		Action:        instance.RequestMethod,
-	}, nil
+	return success(providerHeader), nil
 }
 
 // response generation boilerplate
@@ -171,24 +65,4 @@ func adapterErrorResponse(reason string) *od.HandleOrionadapterResponse {
 			Status: status.WithUnknown(msg),
 		},
 	}
-}
-
-func invalidJWTError() *od.HandleOrionadapterResponse {
-	return permissionDeniedResponse("invalid JWT data")
-}
-
-func configError() *od.HandleOrionadapterResponse {
-	return adapterErrorResponse("invalid configuration")
-}
-
-func tokenGenError() *od.HandleOrionadapterResponse {
-	return adapterErrorResponse("context broker token could not be generated")
-}
-
-func authzError() *od.HandleOrionadapterResponse {
-	return adapterErrorResponse("failed to perform AuthZ check")
-}
-
-func authzDeny() *od.HandleOrionadapterResponse {
-	return permissionDeniedResponse("AuthZ denied authorization")
 }
