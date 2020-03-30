@@ -1,4 +1,4 @@
-package token
+package daps
 
 import (
 	"context"
@@ -63,7 +63,7 @@ func startServer(d *Dispatcher) (*http.Server, chan error) {
 func doIDInteractionWith(h MsgHandler) (
 	got string, clientErr, shutdownErr, svrErr error) {
 
-	daps := &DapsIDRequest{
+	daps := &IDRequest{
 		ConnectorID:          "4e16f007-d959-4eb2-b47d-78dd0c4eab0e",
 		ConnectorAudience:    "https://consumerconnector.fiware.org",
 		SecondsBeforeExpiry:  3600,

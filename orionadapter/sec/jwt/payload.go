@@ -1,26 +1,26 @@
-package token
+package jwt
 
 import (
 	"math"
 	"strconv"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jot "github.com/dgrijalva/jwt-go"
 )
 
-// JwtPayload holds JWT claims (token's payload block) in a map keyed by
+// Payload holds JWT claims (token's payload block) in a map keyed by
 // claim name.
-type JwtPayload map[string]interface{}
+type Payload map[string]interface{}
 
-func fromMapClaims(t *jwt.Token) JwtPayload {
+func fromMapClaims(t *jot.Token) Payload {
 	if t == nil {
-		return JwtPayload{}
+		return Payload{}
 	}
-	claims, ok := t.Claims.(jwt.MapClaims)
+	claims, ok := t.Claims.(jot.MapClaims)
 	if !ok {
-		return JwtPayload{}
+		return Payload{}
 	}
-	return (JwtPayload)(claims) // (*)
+	return (Payload)(claims) // (*)
 }
 
 // (*) Like JwtPayload, MapClaims has an underlying type of
@@ -29,24 +29,24 @@ func fromMapClaims(t *jwt.Token) JwtPayload {
 // FromRaw extracts the payload of the specified JWT without doing any
 // signature validation. If the input JWT is malformed, the returned
 // payload will be empty.
-func FromRaw(encodedToken string) JwtPayload {
-	p := new(jwt.Parser)
-	token, _, err := p.ParseUnverified(encodedToken, jwt.MapClaims{})
+func FromRaw(encodedToken string) Payload {
+	p := new(jot.Parser)
+	token, _, err := p.ParseUnverified(encodedToken, jot.MapClaims{})
 	if err != nil {
-		return JwtPayload{}
+		return Payload{}
 	}
 	return fromMapClaims(token)
 }
 
 // IsEmpty returns true just in case the payload contains no claims.
-func (p JwtPayload) IsEmpty() bool {
+func (p Payload) IsEmpty() bool {
 	return len(p) == 0
 }
 
 // Scopes returns the 'scopes' array in the JWT payload. If there's no
 // 'scopes' array or it isn't an array of strings, then return an empty
 // slice.
-func (p JwtPayload) Scopes() []string {
+func (p Payload) Scopes() []string {
 	switch scopes := p["scopes"].(type) {
 	case []interface{}:
 		return maybeStringSlice(scopes)
@@ -58,7 +58,7 @@ func (p JwtPayload) Scopes() []string {
 // ExpiresIn tells for how many seconds from now the token is still valid
 // by looking at the 'exp' standard claim. If there's no 'exp' field, then
 // return 0.
-func (p JwtPayload) ExpiresIn() uint64 {
+func (p Payload) ExpiresIn() uint64 {
 	now := toUint64(time.Now().Unix())
 	exp := p.ExpirationTime()
 	if exp <= now {
@@ -69,7 +69,7 @@ func (p JwtPayload) ExpiresIn() uint64 {
 
 // ExpirationTime reads the value of the 'exp' standard claim. If there's no
 // 'exp' field, then return 0.
-func (p JwtPayload) ExpirationTime() uint64 {
+func (p Payload) ExpirationTime() uint64 {
 	return toUint64(p["exp"])
 }
 

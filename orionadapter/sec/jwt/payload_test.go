@@ -1,4 +1,4 @@
-package token
+package jwt
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jot "github.com/dgrijalva/jwt-go"
 )
 
 func TestFromMapClaimsWithNil(t *testing.T) {
@@ -21,7 +21,7 @@ func TestFromMapClaimsWithNil(t *testing.T) {
 }
 
 func TestFromMapClaimsWithZeroValue(t *testing.T) {
-	token := &jwt.Token{}
+	token := &jot.Token{}
 	payload := fromMapClaims(token)
 	if payload == nil {
 		t.Errorf("want: empty payload; got: nil")
@@ -32,8 +32,8 @@ func TestFromMapClaimsWithZeroValue(t *testing.T) {
 }
 
 func TestFromMapClaimsWithIncompatibleType(t *testing.T) {
-	token := &jwt.Token{
-		Claims: &jwt.StandardClaims{
+	token := &jot.Token{
+		Claims: &jot.StandardClaims{
 			Subject: "foo",
 		},
 	}
@@ -47,8 +47,8 @@ func TestFromMapClaimsWithIncompatibleType(t *testing.T) {
 }
 
 func TestFromMapClaimsWithEntries(t *testing.T) {
-	token := &jwt.Token{
-		Claims: jwt.MapClaims{
+	token := &jot.Token{
+		Claims: jot.MapClaims{
 			"Subject": "foo",
 		},
 	}
@@ -65,7 +65,7 @@ func TestFromMapClaimsWithEntries(t *testing.T) {
 }
 
 func TestMissingScopes(t *testing.T) {
-	payload := JwtPayload{}
+	payload := Payload{}
 	got := payload.Scopes()
 	if got == nil {
 		t.Errorf("want: empty slice; got: nil")
@@ -76,7 +76,7 @@ func TestMissingScopes(t *testing.T) {
 }
 
 func TestScopesWithEmptyArray(t *testing.T) {
-	payload := JwtPayload{
+	payload := Payload{
 		"scopes": []interface{}{},
 	}
 	got := payload.Scopes()
@@ -89,7 +89,7 @@ func TestScopesWithEmptyArray(t *testing.T) {
 }
 
 func TestScopesWithIncompatibleType(t *testing.T) {
-	payload := JwtPayload{
+	payload := Payload{
 		"scopes": []int{},
 	}
 	got := payload.Scopes()
@@ -102,7 +102,7 @@ func TestScopesWithIncompatibleType(t *testing.T) {
 }
 
 func TestScopesWithSomeValues(t *testing.T) {
-	payload := JwtPayload{
+	payload := Payload{
 		"scopes": []interface{}{"a", "b"},
 	}
 	got := payload.Scopes()
@@ -120,7 +120,7 @@ func TestScopesWithSomeValues(t *testing.T) {
 	}
 }
 
-// jot is a JWT generated on jwt.io using keys in tokenval_test.go
+// jot is a JWT generated on jwt.io using keys in validation_test.go
 func extractScopesFromJwt(t *testing.T, jot string) []string {
 	payload, err := Validate(pubKey, jot)
 	if err != nil {
@@ -129,7 +129,7 @@ func extractScopesFromJwt(t *testing.T, jot string) []string {
 	return payload.Scopes()
 }
 
-// tokens generated on jwt.io with keys in tokenval_test.go
+// tokens generated on jwt.io with keys in validation_test.go
 var extractScopesFromJwtFixtures = []struct {
 	token string
 	want  []string
@@ -238,7 +238,7 @@ var expiresInFixtures = []struct {
 
 func TestExpiresIn(t *testing.T) {
 	for k, d := range expiresInFixtures {
-		payload := JwtPayload{
+		payload := Payload{
 			"exp": d.exp,
 		}
 		got := payload.ExpiresIn()

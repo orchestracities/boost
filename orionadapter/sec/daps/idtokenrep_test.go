@@ -1,4 +1,4 @@
-package token
+package daps
 
 import (
 	"encoding/base64"
@@ -22,7 +22,7 @@ const serverHeaderJSONTemplate string = `{
 
 func TestBuildServerHeader(t *testing.T) {
 	token := "my.fat.jwt"
-	b64rep, err := BuildServerHeader(serverHeaderJSONTemplate, token)
+	b64rep, err := BuildProviderHeader(serverHeaderJSONTemplate, token)
 	if err != nil {
 		t.Errorf("can't build header: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestBuildServerHeader(t *testing.T) {
 
 func TestBuildServerHeaderFromEmptyTemplate(t *testing.T) {
 	token := "my.fat.jwt"
-	b64rep, err := BuildServerHeader("{}", token)
+	b64rep, err := BuildProviderHeader("{}", token)
 	if err != nil {
 		t.Errorf("can't build header: %v", err)
 	}
@@ -73,7 +73,7 @@ var buildServerHeaderWithMalformedTemplate = []struct {
 func TestBuildServerHeaderWithMalformedTemplate(t *testing.T) {
 	token := "my.fat.jwt"
 	for _, k := range buildServerHeaderWithMalformedTemplate {
-		b64rep, err := BuildServerHeader(k.template, token)
+		b64rep, err := BuildProviderHeader(k.template, token)
 		if err == nil {
 			t.Errorf("shouldn't build header from malformed template: %s\n%s",
 				k.template, b64rep)
@@ -83,7 +83,7 @@ func TestBuildServerHeaderWithMalformedTemplate(t *testing.T) {
 
 func TestServerHeaderSerializationErrorBuilding(t *testing.T) {
 	cause := fmt.Errorf("whoa")
-	if err := serverHeaderSerializationError(cause); err == nil {
+	if err := providerHeaderSerializationError(cause); err == nil {
 		t.Errorf("should've build an error")
 	}
 }
