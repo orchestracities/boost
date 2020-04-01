@@ -128,51 +128,51 @@ func authzDeny() *od.HandleOrionadapterResponse {
 //
 
 func (d *authZCallData) logMsgHeader() string {
-	h := `AuthZ\n  Request: %+v\n`
+	h := "AuthZ\n  Request: %+v\n"
 	return fmt.Sprintf(h, d.request)
 }
 
 func (d *authZCallData) logConfigError(err error) {
-	template := `  Error: can't configure call: %v\n`
+	template := "  Error: can't configure call: %v\n"
 	errorLine := fmt.Sprintf(template, err)
 	msg := d.logMsgHeader() + errorLine
 	ilog.Error(msg)
 }
 
 func (d *authZCallData) logCallError(err error) {
-	template := `  Error: AuthZ call failed: %v\n`
+	template := "  Error: AuthZ call failed: %v\n"
 	errorLine := fmt.Sprintf(template, err)
 	msg := d.logMsgHeader() + errorLine
 	ilog.Error(msg)
 }
 
 func (d *authZCallData) logPermitFromCache() {
-	decisionLine := `  Decision: Permit (cached)\n`
+	decisionLine := "  Decision: Permit (cached)\n"
 	msg := d.logMsgHeader() + decisionLine
 	ilog.Info(msg)
 }
 
 func (d *authZCallData) logDenyFromCache() {
-	decisionLine := `  Decision: Deny (cached)\n`
+	decisionLine := "  Decision: Deny (cached)\n"
 	msg := d.logMsgHeader() + decisionLine
 	ilog.Info(msg)
 }
 
 func cachingLine(decisionCached bool) string {
 	if decisionCached {
-		return `  Caching: decision saved to cache\n`
+		return "  Caching: decision saved to cache\n"
 	}
-	return `  Caching: decision not saved to cache\n`
+	return "  Caching: decision not saved to cache\n"
 }
 
 func (d *authZCallData) logDeny(decisionCached bool) {
-	decisionLine := `  Decision: Deny\n`
+	decisionLine := "  Decision: Deny\n"
 	msg := d.logMsgHeader() + decisionLine + cachingLine(decisionCached)
 	ilog.Info(msg)
 }
 
 func (d *authZCallData) logPermit(decisionCached bool) {
-	decisionLine := `  Decision: Permit\n`
+	decisionLine := "  Decision: Permit\n"
 	msg := d.logMsgHeader() + decisionLine + cachingLine(decisionCached)
 	ilog.Info(msg)
 }
