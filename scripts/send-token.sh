@@ -18,7 +18,8 @@ source "${ROOTDIR}/scripts/env.sh"
 
 HEADERARG=$(sh "${ROOTDIR}/scripts/idsa-header-value.sh" "${TOKENARG}")
 
-"${OUTBINDIR}/mixc" check -s destination.service="svc.cluster.local" \
+"${OUTBINDIR}/mixc" check \
+    -s destination.service="svc.cluster.local",request.method=GET,request.path="/" \
     --stringmap_attributes "request.headers=header:${HEADERARG}"
 
 # NOTE. IDSA header name. Yep, it's aptly called "header" :-)
