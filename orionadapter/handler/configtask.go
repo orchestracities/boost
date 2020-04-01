@@ -3,6 +3,7 @@ package handler
 import (
 	ilog "istio.io/pkg/log"
 
+	"github.com/orchestracities/boost/orionadapter/cache"
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 )
@@ -16,6 +17,14 @@ func extractConfig(r *od.HandleOrionadapterRequest) (
 		ilog.Errorf("can't read config from request: %v", cErr)
 		return nil, configError()
 	}
+
+	if ok := cache.PutAdapterConfig(params); ok {
+		ilog.Infof("cached latest adapter config: %v", params)
+	} else {
+		ilog.Errorf("failed to cache latest adapter config: %v", params)
+	}
+	// TODO: get rid of above caching once this gets sorted:
+	// - https://github.com/orchestracities/boost/issues/24
 
 	return params, nil
 }

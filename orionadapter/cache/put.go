@@ -27,9 +27,9 @@ func PutDapsIDToken(jwtData string) (ok bool) {
 
 // PutAuthZDecision caches an AuthZ decision. Use the ok flag to tell if the
 // operation was successful.
-func PutAuthZDecision(idsClientHeader string, callParams *authz.Request,
+func PutAuthZDecision(idsConsumerHeader string, callParams *authz.Request,
 	authorized bool) (ok bool) {
-	key, jwtData, err := authZCallKey(idsClientHeader, callParams)
+	key, jwtData, err := authZCallKey(idsConsumerHeader, callParams)
 	if err != nil {
 		return false
 	}

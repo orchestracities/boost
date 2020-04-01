@@ -23,7 +23,7 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 		return err, nil
 	}
 
-	providerHeader, err := generateProviderHeader(params)
+	providerHeader, err := GenerateProviderHeader(params)
 	if err != nil {
 		return err, nil
 	}

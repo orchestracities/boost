@@ -3,14 +3,18 @@ package handler
 import (
 	ilog "istio.io/pkg/log"
 
+	"github.com/orchestracities/boost/orionadapter/cache"
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	"github.com/orchestracities/boost/orionadapter/sec/daps"
 )
 
-func generateProviderHeader(params *config.Params) (
+// GenerateProviderHeader gets a new ID token from DAPS, puts it into the
+// configured provider header JSON object and then Base64 encodes the JSON
+// object.
+func GenerateProviderHeader(params *config.Params) (
 	header string, err *od.HandleOrionadapterResponse) {
-	header, hErr := GenerateToken(params)
+	header, hErr := generateToken(params)
 	if hErr != nil {
 		ilog.Errorf("error generating provider header: %v\n", hErr)
 		return "", tokenGenError()
@@ -19,18 +23,28 @@ func generateProviderHeader(params *config.Params) (
 	return header, nil
 }
 
-// GenerateToken gets a new ID token from DAPS, puts it into the configured
-// provider header JSON object and then Base64 encodes the JSON object.
-func GenerateToken(p *config.Params) (string, error) {
+func generateToken(p *config.Params) (string, error) {
 	request, err := buildDapsIDRequest(p)
 	idTokenTemplate, err := getIDTokenJSONTemplate(p, err)
 	if err != nil {
 		return "", err
 	}
 
+	if idToken, found := cache.LookupDapsIDToken(); found {
+		ilog.Infof("cache hit for provider ID token\n")
+		return idToken, nil
+	}
+	ilog.Infof("cache miss for provider ID token, requesting new DAPS ID\n")
+
 	idToken, err := request.IdentityToken()
 	if err != nil {
 		return "", err
+	}
+
+	if ok := cache.PutDapsIDToken(idToken); ok {
+		ilog.Info("cached new provider ID token\n")
+	} else {
+		ilog.Error("failed to cache new provider ID token\n")
 	}
 
 	return daps.BuildProviderHeader(idTokenTemplate, idToken)
