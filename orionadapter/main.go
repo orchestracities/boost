@@ -5,10 +5,13 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/orchestracities/boost/orionadapter/cache"
 	grpc "github.com/orchestracities/boost/orionadapter/endpoint"
 )
 
 func main() {
+	initCache()
+
 	port := readPortArg()
 	s, err := grpc.NewOrionAdapter(port)
 	if err != nil {
@@ -41,4 +44,10 @@ func readPortArg() int {
 func runHTTP() {
 	port := os.Args[2] // TODO let it bomb out if no arg?!
 	go grpc.RunHTTPServerLoop(port)
+}
+
+func initCache() {
+	if err := cache.Init(); err != nil {
+		fmt.Printf("unable to initialize cache: %v", err)
+	}
 }
