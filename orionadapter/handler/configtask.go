@@ -19,9 +19,9 @@ func extractConfig(r *od.HandleOrionadapterRequest) (
 	}
 
 	if ok := cache.PutAdapterConfig(params); ok {
-		ilog.Infof("cached latest adapter config: %v", params)
+		ilog.Info("cached latest adapter config\n")
 	} else {
-		ilog.Errorf("failed to cache latest adapter config: %v", params)
+		ilog.Error("failed to cache latest adapter config\n")
 	}
 	// TODO: get rid of above caching once this gets sorted:
 	// - https://github.com/orchestracities/boost/issues/24
