@@ -223,7 +223,8 @@ See if we can still get away with an invalid token...
 You should get back a fat 403 with a message along the lines of:
 
     PERMISSION_DENIED:
-    orionadapter-handler.handler.istio-system:unauthorized: invalid JWT data
+    orionadapter-handler.handler.istio-system:
+    unauthorized: invalid consumer JWT data
 
 Like I said earlier, the adapter verifies the JWT you send as part of the IDSA-Header is valid---see
 `deployment/sample_operator_cfg.yaml`. What happens if we send a valid
@@ -475,6 +476,57 @@ and we're ready to try our luck
 
 If everything went according to plan, you're looking at a `200`
 response on your terminal with the JSON body returned by Orion :-)
+
+##### Caching
+
+Oh my, saving the best for last. So for a [whole bunch of
+reasons](https://github.com/orchestracities/boost/issues/9),
+we wound up with our own caching solution instead of the Mixer's.
+(Lucky us, fun times.) Fingers crossed, our caching should be decent
+enough for most scenarios but time will tell. If you dig deep into the
+adapter logs, you should be able to see that it caches calls to DAPS
+and AuthZ. A DAPS ID token gets cached for the amount of time specified
+in the JWT `exp` field. Likewise, an AuthZ decision gets cached until
+the consumer JWT expires.
+
+For example, if you look at the logs to see what happened while the
+adapter serviced the last call we made to Orion, you should be able
+to spot a message similar to
+
+    AuthZ
+      Request: &{
+        Roles: [role0 role1 role2 role3]
+        ResourceID: b3a4a7d2-ce61-471f-b05d-fb82452ae686
+        ResourcePath: /v2
+        FiwareService: service
+        Action: GET
+      }
+      Decision: Permit
+      Caching: decision not saved to cache
+
+Uh, what's that "decision **not** saved to cache"? Why?! Well when
+we whipped together that `MY_FAT_JWT` earlier we did it a bit too
+quickly. Without an `exp` field, you can't expect calls to get
+cached, can you? If besides the roles, you also add an `exp` field
+with a Unix timestamp in the future, reexport `HEADER_VALUE` and
+repeat the call, the log message should read
+
+    AuthZ
+      Request: ...
+      Decision: Permit
+      Caching: decision saved to cache
+
+Ah, AuthZ's decision got cached. Try the same call again now and
+then you should see a cache hit
+
+    AuthZ
+      Request: ...
+      Decision: Permit (cached)
+
+Just in case you're wondering. Caching takes into account all call
+inputs so if you change the JWT (or HTTP method/path, etc.) just
+slightly the adapter will ask again his old friend AuthZ for permission.
+
 
 ##### Cleaning up
 
