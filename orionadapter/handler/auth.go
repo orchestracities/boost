@@ -44,13 +44,16 @@ func success(serverToken string) *od.HandleOrionadapterResponse {
 		Result: &iad.CheckResult{
 			Status:        status.OK,
 			ValidDuration: 0 * time.Second, // (*)
-			ValidUseCount: 0,               // (*)
+			ValidUseCount: 1,               // (*)
 		},
 		Output: &od.OutputMsg{ContextBrokerToken: serverToken},
 	}
 	// (*) Mixer caching. With those settings we're telling Mixer not to
 	// cache our responses. We do this since we've rolled out our own
-	// caching. Downside: Mixer will hit us every time a request comes in.
+	// caching. Downside: Mixer will hit us every time an HTTP request
+	// comes in. Actually for some obscure reason we get hit twice for
+	// each request, but thanks to caching the second call takes about
+	// 0.2ms on average. Peanuts, but annoying.
 }
 
 func permissionDeniedResponse(reason string) *od.HandleOrionadapterResponse {
