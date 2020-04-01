@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"time"
 
 	iad "istio.io/api/mixer/adapter/model/v1beta1"
 	"istio.io/istio/mixer/pkg/status"
@@ -41,12 +42,15 @@ func Authorize(r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse,
 func success(serverToken string) *od.HandleOrionadapterResponse {
 	return &od.HandleOrionadapterResponse{
 		Result: &iad.CheckResult{
-			Status: status.OK,
-			// ValidDuration: 5 * time.Second
-			// i.e. caching? see Keyval
+			Status:        status.OK,
+			ValidDuration: 0 * time.Second, // (*)
+			ValidUseCount: 0,               // (*)
 		},
 		Output: &od.OutputMsg{ContextBrokerToken: serverToken},
 	}
+	// (*) Mixer caching. With those settings we're telling Mixer not to
+	// cache our responses. We do this since we've rolled out our own
+	// caching. Downside: Mixer will hit us every time a request comes in.
 }
 
 func permissionDeniedResponse(reason string) *od.HandleOrionadapterResponse {
