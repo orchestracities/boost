@@ -1,15 +1,16 @@
-package token
+package daps
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-// ServerHeader holds the IDS server header we generate.
-type ServerHeader struct {
+// ProviderHeader holds the IDS server header we generate.
+type ProviderHeader struct {
 	Type            string `json:"@type"`
 	ID              string `json:"id"`
 	Issued          string `json:"issued"`
@@ -22,16 +23,16 @@ type ServerHeader struct {
 	} `json:"securityToken"`
 }
 
-func fromConfig(idTokenJSONTemplate string) (*ServerHeader, error) {
-	out := &ServerHeader{}
+func fromConfig(idTokenJSONTemplate string) (*ProviderHeader, error) {
+	out := &ProviderHeader{}
 	data := []byte(idTokenJSONTemplate)
 	if err := json.Unmarshal(data, &out); err != nil {
-		return nil, malformedServerHeaderTemplateError(err)
+		return nil, malformedProviderHeaderTemplateError(err)
 	}
 	return out, nil
 }
 
-func populateServerHeader(config *ServerHeader, idToken string,
+func populateProviderHeader(config *ProviderHeader, idToken string,
 	err error) error {
 	if err != nil {
 		return err
@@ -49,36 +50,36 @@ func populateServerHeader(config *ServerHeader, idToken string,
 	return nil
 }
 
-func serializeServerHeader(h *ServerHeader, err error) (string, error) {
+func serializeProviderHeader(h *ProviderHeader, err error) (string, error) {
 	if err != nil {
 		return "", err
 	}
 
 	jsonRep, err := json.Marshal(h)
 	if err != nil {
-		return "", serverHeaderSerializationError(err)
+		return "", providerHeaderSerializationError(err)
 	}
 
 	b64rep := base64.StdEncoding.EncodeToString([]byte(jsonRep))
 	return b64rep, nil
 }
 
-// BuildServerHeader assembles the response header value containing
+// BuildProviderHeader assembles the response header value containing
 // the connector's ID token we got from DAPS.
-func BuildServerHeader(idTokenJSONTemplate string,
+func BuildProviderHeader(idTokenJSONTemplate string,
 	idToken string) (string, error) {
 	h, err := fromConfig(idTokenJSONTemplate)
-	err = populateServerHeader(h, idToken, err)
-	return serializeServerHeader(h, err)
+	err = populateProviderHeader(h, idToken, err)
+	return serializeProviderHeader(h, err)
 }
 
 // errors boilerplate
 
-func serverHeaderSerializationError(cause error) error {
+func providerHeaderSerializationError(cause error) error {
 	return fmt.Errorf("malformed ID token header: %v", cause)
 }
 
-func malformedServerHeaderTemplateError(cause error) error {
+func malformedProviderHeaderTemplateError(cause error) error {
 	return fmt.Errorf("malformed ID token JSON template: %v", cause)
 }
 

@@ -1,4 +1,4 @@
-package grpc
+package endpoint
 
 import (
 	"context"
@@ -38,12 +38,6 @@ var _ od.HandleOrionadapterServiceServer = &OrionAdapter{}
 // call to our handler.
 func (s *OrionAdapter) HandleOrionadapter(ctx context.Context,
 	r *od.HandleOrionadapterRequest) (*od.HandleOrionadapterResponse, error) {
-	if cfg, err := handler.GetConfig(r); err == nil {
-		currentAdapterConfig = cfg
-	}
-	// TODO: get rid of above code once this gets sorted:
-	// - https://github.com/orchestracities/boost/issues/24
-
 	return handler.Authorize(r)
 }
 

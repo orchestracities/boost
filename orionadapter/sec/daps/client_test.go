@@ -1,4 +1,4 @@
-package token
+package daps
 
 import (
 	"fmt"
@@ -123,7 +123,7 @@ wSWFX8pQTNWseFTkRvJEShM=
 func TestBuildClientWithValidParams(t *testing.T) {
 	host, clPvtKey, clCert, srvCert :=
 		"whoopsie.dapsie", testCertPvtKey, testCert, testCert
-	_, err := NewDapsClient(host, clPvtKey, clCert, srvCert)
+	_, err := NewClient(host, clPvtKey, clCert, srvCert)
 	if err != nil {
 		t.Errorf("should've built a client struct: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestCantBuildClientWithoutClientPvtKey(t *testing.T) {
 	host, clCert, srvCert :=
 		"whoopsie.dapsie", testCert, testCert
 	for i, k := range cantBuildClientWithoutClientPvtKey {
-		_, err := NewDapsClient(host, k.pvtK, clCert, srvCert)
+		_, err := NewClient(host, k.pvtK, clCert, srvCert)
 		if err == nil {
 			t.Errorf("[%d] shouldn't have built a client struct: %v", i, err)
 		}
@@ -162,7 +162,7 @@ func TestCantBuildClientWithoutClientCert(t *testing.T) {
 	host, clPvtKey, srvCert :=
 		"whoopsie.dapsie", testCertPvtKey, testCert
 	for i, k := range cantBuildClientWithoutClientCert {
-		_, err := NewDapsClient(host, clPvtKey, k.cert, srvCert)
+		_, err := NewClient(host, clPvtKey, k.cert, srvCert)
 		if err == nil {
 			t.Errorf("[%d] shouldn't have built a client struct: %v", i, err)
 		}
@@ -182,7 +182,7 @@ func TestCantBuildClientWithoutServerCert(t *testing.T) {
 	host, clPvtKey, clCert :=
 		"whoopsie.dapsie", testCertPvtKey, testCert
 	for i, k := range cantBuildClientWithoutServerCert {
-		_, err := NewDapsClient(host, clPvtKey, clCert, k.cert)
+		_, err := NewClient(host, clPvtKey, clCert, k.cert)
 		if err == nil {
 			t.Errorf("[%d] shouldn't have built a client struct: %v", i, err)
 		}

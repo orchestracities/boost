@@ -1,14 +1,27 @@
-package token
+package jwt
 
 import (
+	"fmt"
+	"math"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jot "github.com/dgrijalva/jwt-go"
 )
 
+func TestFromMapClaimsWithNil(t *testing.T) {
+	payload := fromMapClaims(nil)
+	if payload == nil {
+		t.Errorf("want: empty payload; got: nil")
+	}
+	if size := len(payload); size != 0 {
+		t.Errorf("want: empty payload; got size: %v", size)
+	}
+}
+
 func TestFromMapClaimsWithZeroValue(t *testing.T) {
-	token := &jwt.Token{}
+	token := &jot.Token{}
 	payload := fromMapClaims(token)
 	if payload == nil {
 		t.Errorf("want: empty payload; got: nil")
@@ -19,8 +32,8 @@ func TestFromMapClaimsWithZeroValue(t *testing.T) {
 }
 
 func TestFromMapClaimsWithIncompatibleType(t *testing.T) {
-	token := &jwt.Token{
-		Claims: &jwt.StandardClaims{
+	token := &jot.Token{
+		Claims: &jot.StandardClaims{
 			Subject: "foo",
 		},
 	}
@@ -34,8 +47,8 @@ func TestFromMapClaimsWithIncompatibleType(t *testing.T) {
 }
 
 func TestFromMapClaimsWithEntries(t *testing.T) {
-	token := &jwt.Token{
-		Claims: jwt.MapClaims{
+	token := &jot.Token{
+		Claims: jot.MapClaims{
 			"Subject": "foo",
 		},
 	}
@@ -52,7 +65,7 @@ func TestFromMapClaimsWithEntries(t *testing.T) {
 }
 
 func TestMissingScopes(t *testing.T) {
-	payload := JwtPayload{}
+	payload := Payload{}
 	got := payload.Scopes()
 	if got == nil {
 		t.Errorf("want: empty slice; got: nil")
@@ -63,7 +76,7 @@ func TestMissingScopes(t *testing.T) {
 }
 
 func TestScopesWithEmptyArray(t *testing.T) {
-	payload := JwtPayload{
+	payload := Payload{
 		"scopes": []interface{}{},
 	}
 	got := payload.Scopes()
@@ -76,7 +89,7 @@ func TestScopesWithEmptyArray(t *testing.T) {
 }
 
 func TestScopesWithIncompatibleType(t *testing.T) {
-	payload := JwtPayload{
+	payload := Payload{
 		"scopes": []int{},
 	}
 	got := payload.Scopes()
@@ -89,7 +102,7 @@ func TestScopesWithIncompatibleType(t *testing.T) {
 }
 
 func TestScopesWithSomeValues(t *testing.T) {
-	payload := JwtPayload{
+	payload := Payload{
 		"scopes": []interface{}{"a", "b"},
 	}
 	got := payload.Scopes()
@@ -107,7 +120,7 @@ func TestScopesWithSomeValues(t *testing.T) {
 	}
 }
 
-// jot is a JWT generated on jwt.io using keys in tokenval_test.go
+// jot is a JWT generated on jwt.io using keys in validation_test.go
 func extractScopesFromJwt(t *testing.T, jot string) []string {
 	payload, err := Validate(pubKey, jot)
 	if err != nil {
@@ -116,7 +129,7 @@ func extractScopesFromJwt(t *testing.T, jot string) []string {
 	return payload.Scopes()
 }
 
-// tokens generated on jwt.io with keys in tokenval_test.go
+// tokens generated on jwt.io with keys in validation_test.go
 var extractScopesFromJwtFixtures = []struct {
 	token string
 	want  []string
@@ -167,6 +180,149 @@ func TestExtractScopesFromJwt(t *testing.T) {
 	for k, d := range extractScopesFromJwtFixtures {
 		got := extractScopesFromJwt(t, d.token)
 		if !reflect.DeepEqual(d.want, got) {
+			t.Errorf("[%v] want: %v; got: %v", k, d.want, got)
+		}
+	}
+}
+
+var fromRawMalformedFixtures = []string{
+	"", ".", "..",
+	// derived from { alg: RS256 }.{ }.sig by chopping off part of payload
+	`eyJhbGciOiJSUzI1NiJ9.e.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw`,
+	// same header & sig as above, but now payload: '{ in: valid! }'
+	`eyJhbGciOiJSUzI1NiJ9.eyBpbjogdmFsaWQhIH0.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw`,
+}
+
+func TestFromRawMalformed(t *testing.T) {
+	for k, d := range fromRawMalformedFixtures {
+		got := FromRaw(d)
+		if !got.IsEmpty() {
+			t.Errorf("[%v] want: empty; got: %v", k, got)
+		}
+	}
+}
+
+var fromRawWithInvalidSignatureFixtures = []string{
+	// { alg: HS256 }.{ scopes = [a, b], exp: 123.1 }.sig
+	// sig is same as that for { alg: RS256 }.{} so it's not valid
+	`eyJhbGciOiJIUzI1NiJ9.eyJzY29wZXMiOlsiYSIsImIiXSwiZXhwIjoxMjMuMX0.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw`,
+	// { alg: HS256 }.{ scopes = [a, b], exp: 123.1 }.junk_sig
+	`eyJhbGciOiJIUzI1NiJ9.eyJzY29wZXMiOlsiYSIsImIiXSwiZXhwIjoxMjMuMX0.junk_sig`,
+	// { alg: HS256 }.{ scopes = [a, b], exp: 123 }.junk_sig
+	`eyJhbGciOiJIUzI1NiJ9.eyJzY29wZXMiOlsiYSIsImIiXSwiZXhwIjoxMjN9.junk_sig`,
+}
+
+func TestFromRawWithInvalidSignature(t *testing.T) {
+	for k, d := range fromRawWithInvalidSignatureFixtures {
+		wantScopes := []string{"a", "b"}
+		wantExp := uint64(123)
+		got := FromRaw(d)
+		if !reflect.DeepEqual(wantScopes, got.Scopes()) {
+			t.Errorf("[%v] want scopes: %v; got: %v", k, wantScopes, got)
+		}
+		if wantExp != got.ExpirationTime() {
+			t.Errorf("[%v] want exp: %v; got: %v", k, wantExp, got)
+		}
+	}
+}
+
+var expiresInFixtures = []struct {
+	exp interface{}
+	lo  uint64
+	hi  uint64
+}{
+	{-12.3, 0, 0}, {0, 0, 0}, {time.Now().Unix(), 0, 0},
+	{float64(time.Now().Unix()) + 0.1, 0, 0},
+	{time.Now().Unix() + 10, 5, 10},
+}
+
+func TestExpiresIn(t *testing.T) {
+	for k, d := range expiresInFixtures {
+		payload := Payload{
+			"exp": d.exp,
+		}
+		got := payload.ExpiresIn()
+		if got < d.lo || got > d.hi {
+			t.Errorf("[%v] want: ∈ [%v, %v]; got: %v", k, d.lo, d.hi, got)
+		}
+	}
+}
+
+// test conversion functions
+
+var intToUint64Fixtures = []struct {
+	input int64
+	want  uint64
+}{
+	{0, 0}, {-123, 0}, {math.MinInt64, 0}, {1, 1}, {123, 123},
+	{math.MaxInt64, math.MaxInt64},
+}
+
+func TestIntToUint64(t *testing.T) {
+	for k, d := range intToUint64Fixtures {
+		got := intToUint64(d.input)
+		if got != d.want {
+			t.Errorf("[%v] want: %v; got: %v", k, d.want, got)
+		}
+	}
+}
+
+var floatToUint64Fixtures = []struct {
+	input float64
+	want  uint64
+}{
+	{0, 0}, {-123, 0}, {math.MinInt64, 0}, {1, 1}, {123, 123},
+	{math.MaxUint64, math.MaxUint64},
+	{0.0, 0}, {-1.23, 0}, {1.1, 1}, {123.9, 123},
+}
+
+func TestFloatToUint64(t *testing.T) {
+	for k, d := range floatToUint64Fixtures {
+		var got uint64 = floatToUint64(d.input)
+		if got != d.want {
+			t.Errorf("[%v] want: %v; got: %v", k, d.want, got)
+		}
+	}
+}
+
+var stringToUint64Fixtures = []struct {
+	input string
+	want  uint64
+}{
+	{"", 0}, {"\n", 0}, {"junk", 0},
+	{"0", 0}, {"-123", 0},
+	{fmt.Sprintf("%d", int64(math.MinInt64)), 0},
+	{"1", 1}, {"123", 123},
+	{fmt.Sprintf("%d", uint64(math.MaxUint64)), math.MaxUint64},
+	{"0.0", 0}, {"-1.23", 0}, {"1.1", 1}, {"123.9", 123},
+}
+
+func TestStringToUint64(t *testing.T) {
+	for k, d := range stringToUint64Fixtures {
+		var got uint64 = stringToUint64(d.input)
+		if got != d.want {
+			t.Errorf("[%v] want: %v; got: %v", k, d.want, got)
+		}
+	}
+}
+
+var toUnit64Fixtures = []struct {
+	input interface{}
+	want  uint64
+}{
+	{int8(123), 123}, {int16(123), 123}, {int32(123), 123},
+	{int64(123), 123}, {int(123), 123},
+	{uint8(123), 123}, {uint16(123), 123}, {uint32(123), 123},
+	{uint64(123), 123}, {uint(123), 123},
+	{float32(123.9), 123}, {float64(123.9), 123},
+	{"123", 123},
+	{stringToUint64Fixtures, 0},
+}
+
+func TestToUint64(t *testing.T) {
+	for k, d := range toUnit64Fixtures {
+		var got uint64 = toUint64(d.input)
+		if got != d.want {
 			t.Errorf("[%v] want: %v; got: %v", k, d.want, got)
 		}
 	}
