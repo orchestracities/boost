@@ -6,7 +6,7 @@ metadata:
   name: orion
 spec:
   ports:
-  - name: ngsi
+  - name: http
     port: 1026
     protocol: TCP
     targetPort: 1026
@@ -29,9 +29,6 @@ spec:
       app: orion
   template:
     metadata:
-      annotations:
-        "scheduler.alpha.kubernetes.io/critical-pod": ""
-        sidecar.istio.io/inject: "false"
       labels:
         app: orion
     spec:
@@ -50,4 +47,4 @@ spec:
         name: orion
         ports:
         - containerPort: 1026
-          name: ngsi
+          name: http

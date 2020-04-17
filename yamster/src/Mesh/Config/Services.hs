@@ -81,15 +81,21 @@ orion = def
                       "-ngsiv1Autocast -dbhost " ++ serviceName mongodb ++
                       " -logLevel DEBUG"
   , ports           =
-    [ def { portName      = Just "ngsi"
+    [ def { portName      = Just "http"  -- (1)
           , servicePort   = 1026
-          , externalPort  = Just 1026  -- (*)
+          , externalPort  = Just 1026    -- (2)
           }
     ]
-  , withSideCar = False
+  , withSideCar = True
   }
 --
--- (*) NOTE. Custom external ports.
+-- NOTE
+-- (1) Port name. Surely `ngsi` would make more sense here, but if we
+-- set it to anything else than `http`, then the sidecar stops forwarding
+-- messages to Orion. Uh, WTH.
+-- See: https://github.com/orchestracities/boost/issues/28
+--
+-- (2) Custom external ports.
 -- The Istio demo profile exposes some common ports like 80 and 443
 -- through load-balancer cluster ports 30072 and 31515, respectively.
 -- We have to add our Orion port manually to the load balancer config:
