@@ -1,14 +1,17 @@
 {-# LANGUAGE UnicodeSyntax #-}
 {-# LANGUAGE QuasiQuotes #-}
 module Mesh.Config.Envoy
-  (orionEgressFilter)
+  ( httpbinEgressFilter
+  , orionEgressFilter
+  )
 where
 
 import Data.String.Interpolate (i)
 import Peml
 
 import Mesh.Config.Adapter
-import Mesh.Config.Services (orionadapter, orionadapterHttpEndpoint, httpbin)
+import Mesh.Config.Services (orionadapter, orionadapterHttpEndpoint, orion,
+                             httpbin)
 import Mesh.Util.K8s (ServiceSpec(..), Port(..), serviceFqn)
 
 
@@ -36,18 +39,24 @@ adapterHttpEndpoint = do
   "address"    =: serviceFqn orionadapter
   "port_value" =: servicePort orionadapterHttpEndpoint
 
-
-orionEgressFilter ∷ ExprBuilder
-orionEgressFilter = do
+idsEgressFilter ∷ String → ServiceSpec → ExprBuilder
+idsEgressFilter filterName target = do
   "apiVersion" =: "networking.istio.io/v1alpha3"
   "kind" =: "EnvoyFilter"
   "metadata" =: do
-    "name" =: "orion-egress-filter"
+    "name" =: filterName
     "namespace" =: "default"
   "spec" =: do
-    "workloadSelector" =: do          -- TODO how to select more than one?
-      "labels" =: do                  -- E.g. what if we want to have both
-        "app" =: serviceName httpbin  -- httpbin and orion? Go type is map...
+    "workloadSelector" =: do
+      "labels" =: do
+        "app" =: serviceName target
+-- (*) TODO. Multiple workload selector.
+-- Is there a way to select more than one target workload, e.g. orion
+-- and httpbin at the same time? If yes, then we could avoid defining
+-- two separate filters as we do here, one targeting orion and the
+-- other httpbin. The Go type for labels is map<string, string> so
+-- it doesn't look like we could do that by adding another app key...
+
     "configPatches" =: do
     -- This patch adds the lua filter to the listener/http connection manager
       (-:) $ do
@@ -100,3 +109,9 @@ orionEgressFilter = do
 -- one-element list with a map. In the end duplicates get ditched
 -- when converting to YAML anyway.
 --
+
+orionEgressFilter ∷ ExprBuilder
+orionEgressFilter = idsEgressFilter "orion-egress-filter" orion
+
+httpbinEgressFilter ∷ ExprBuilder
+httpbinEgressFilter = idsEgressFilter "httpbin-egress-filter" httpbin
