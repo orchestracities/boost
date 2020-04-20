@@ -394,18 +394,57 @@ through port `31026`. Next deploy Orion
 
 and you're ready to play around! Here's how to get your feet wet:
 
-    $ curl -v "$(minikube ip):31026/v2"
+    $ source scripts/cluster-url.sh
+    $ curl -v "$ORION_BASE_URL/v2"
     # you should get back a 403/permission denied.
 
-    $ curl -v "$(minikube ip):31026/v2" -H "header:${HEADER_VALUE}"
+    $ curl -v "$ORION_BASE_URL/v2" -H "header:${HEADER_VALUE}"
     # set HEADER_VALUE as we did earlier; you should get back some
     # JSON with Orion's API entry points.
 
 You can try adding entities, subscriptions and trigger notifications.
-It should all go without a hitch, but there's a snag: because of
-[#28](https://github.com/orchestracities/boost/issues/28), at the
-moment no IDS header gets added to Orion notification messages. But
-a fix should become available soon soon, stay tuned!
+It should all go without a hitch. Here's a smoke test.
+
+    $ sh scripts/orion.post-entity.sh
+
+creates a brand new Orion entity of type `Room` with an ID of `Room1`,
+`pressure` and `temperature` attributes, whereas
+
+    $ sh scripts/orion.sub.sh
+
+tells Orion to notify our trustworthy friend at `httpbin.org` (we owe
+you big time my china!) whenever that entity changes. To see it while
+it's happening, start `tcpdump` in a separate terminal
+
+    $ sudo tcpdump -i any -s 4096 -A host httpbin.org
+
+then switch back to your current terminal and send a `Room1` update
+with
+
+    $ sh scripts/orion.update-entity.sh
+
+Your `tcpdump` should've spewed out a giant cloud of text but if your
+eyes can manage to separate the wheat from the chaff, you should be
+able to catch the Orion notification coming out of the mesh towards
+`httpbin.org`. It should look something like
+
+    POST /post HTTP/1.1
+    host: httpbin.org:80
+    fiware-servicepath: /
+    fiware-correlator: 449ec094-82fe-11ea-a8d6-0242ac110013
+    ngsiv2-attrsformat: normalized
+    header: eyJAdHlwZSI6ImlkczpSZXN1bH...(Orion's DAPS identity)...
+    ...
+
+    {"subscriptionId":"5e9d82045bfa0aeb50e8e21e",
+     "data":[{
+         "id":"Room1",
+         "type":"Room",
+         "temperature":{"type":"Float","value":21.5,"metadata":{}}}]}
+
+Smoking can badly damage your health, so I won't encourage you to try
+any more smoke tests but surely we've set the scene for your own,
+hopefully smoke-free, tests.
 
 ##### Access-control with AuthZ
 
