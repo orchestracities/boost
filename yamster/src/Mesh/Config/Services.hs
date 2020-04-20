@@ -54,10 +54,10 @@ mockdaps = def
 -- WARNING. only use for testing as DB data isn't persisted!
 mongodb ∷ ServiceSpec
 mongodb = def
-  { serviceName     = "mongodb"
-  , image           = "mongo:3.6"
-  , command         = CmdStr "mongod --bind_ip_all --smallfiles"
-  , ports           = [ mongo { servicePort   = 27017 } ]
+  { serviceName = "mongodb"
+  , image       = "mongo:3.6"
+  , command     = CmdStr "mongod --bind_ip_all --smallfiles"
+  , ports       = [ mongo { servicePort = 27017 } ]
   , withSideCar = False
   }
 
@@ -86,7 +86,6 @@ orion = def
       , externalPort  = Just 1026  -- (2)
       }
     ]
-  , withSideCar = True
   }
 --
 -- NOTE
