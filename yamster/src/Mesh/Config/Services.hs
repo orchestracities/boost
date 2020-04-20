@@ -65,7 +65,7 @@ mongodb = def
 startOrion ∷ ContainerCommand
 startOrion = Cmd "bash" ["-c", script]
   where
-    script =  "sleep 4; "  -- (*)
+    script =  "sleep 10; "  -- (*)
            ++ "exec /usr/bin/contextBroker -fg -multiservice -ngsiv1Autocast "
            ++ "-dbhost " ++ serviceName mongodb
            ++ " -logLevel DEBUG"
