@@ -101,9 +101,16 @@ After installing Minikube, download the Istio release and install the demo
 profile. Here's the short version, assuming you've already installed Minikube:
 
     $ cd ~
+
+    # Start Minikube.
+
     $ minikube start --memory=16384 --cpus=4
     # Try --memory=4096 if you don't have that much RAM, it worked for us :-)
     $ kubectl config use-context minikube
+
+    # Download and install Istio 1.4.2.
+
+    $ export ISTIO_VERSION=1.4.2
     $ curl -L https://istio.io/downloadIstio | sh -
     $ cd istio-*
     $ export PATH="${PWD}/bin:${PATH}"
@@ -118,6 +125,12 @@ Long version:
 - https://istio.io/docs/setup/getting-started/
 - https://istio.io/docs/setup/additional-setup/sidecar-injection/#automatic-sidecar-injection
 - https://istio.io/docs/tasks/policy-enforcement/enabling-policy/
+
+**Note**. *Istio version*. Version `1.4.2` is the safest to use since
+we've compiled and tested the adapter's gRPC interface against this
+version. We also tested extensively with version `1.4.0` and `1.4.3`.
+In principle what's documented in this README should work with any
+`1.4.*` version and, barring minor adjustments, with `1.5.*` too.
 
 **Note**. *Policy Enforcement*. The docs say the `demo` profile should enable
 it (i.e. set `disablePolicyChecks` to `false`) but it doesn't nor does it
