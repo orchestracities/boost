@@ -101,9 +101,16 @@ After installing Minikube, download the Istio release and install the demo
 profile. Here's the short version, assuming you've already installed Minikube:
 
     $ cd ~
+
+    # Start Minikube.
+
     $ minikube start --memory=16384 --cpus=4
     # Try --memory=4096 if you don't have that much RAM, it worked for us :-)
     $ kubectl config use-context minikube
+
+    # Download and install Istio 1.4.2.
+
+    $ export ISTIO_VERSION=1.4.2
     $ curl -L https://istio.io/downloadIstio | sh -
     $ cd istio-*
     $ export PATH="${PWD}/bin:${PATH}"
@@ -118,6 +125,12 @@ Long version:
 - https://istio.io/docs/setup/getting-started/
 - https://istio.io/docs/setup/additional-setup/sidecar-injection/#automatic-sidecar-injection
 - https://istio.io/docs/tasks/policy-enforcement/enabling-policy/
+
+**Note**. *Istio version*. Version `1.4.2` is the safest to use since
+we've compiled and tested the adapter's gRPC interface against this
+version. We also tested extensively with version `1.4.0` and `1.4.3`.
+In principle what's documented in this README should work with any
+`1.4.*` version and, barring minor adjustments, with `1.5.*` too.
 
 **Note**. *Policy Enforcement*. The docs say the `demo` profile should enable
 it (i.e. set `disablePolicyChecks` to `false`) but it doesn't nor does it
@@ -394,18 +407,57 @@ through port `31026`. Next deploy Orion
 
 and you're ready to play around! Here's how to get your feet wet:
 
-    $ curl -v "$(minikube ip):31026/v2"
+    $ source scripts/cluster-url.sh
+    $ curl -v "$ORION_BASE_URL/v2"
     # you should get back a 403/permission denied.
 
-    $ curl -v "$(minikube ip):31026/v2" -H "header:${HEADER_VALUE}"
+    $ curl -v "$ORION_BASE_URL/v2" -H "header:${HEADER_VALUE}"
     # set HEADER_VALUE as we did earlier; you should get back some
     # JSON with Orion's API entry points.
 
 You can try adding entities, subscriptions and trigger notifications.
-It should all go without a hitch, but there's a snag: because of
-[#28](https://github.com/orchestracities/boost/issues/28), at the
-moment no IDS header gets added to Orion notification messages. But
-a fix should become available soon soon, stay tuned!
+It should all go without a hitch. Here's a smoke test.
+
+    $ sh scripts/orion.post-entity.sh
+
+creates a brand new Orion entity of type `Room` with an ID of `Room1`,
+`pressure` and `temperature` attributes, whereas
+
+    $ sh scripts/orion.sub.sh
+
+tells Orion to notify our trustworthy friend at `httpbin.org` (we owe
+you big time my china!) whenever that entity changes. To see it while
+it's happening, start `tcpdump` in a separate terminal
+
+    $ sudo tcpdump -i any -s 4096 -A host httpbin.org
+
+then switch back to your current terminal and send a `Room1` update
+with
+
+    $ sh scripts/orion.update-entity.sh
+
+Your `tcpdump` should've spewed out a giant cloud of text but if your
+eyes can manage to separate the wheat from the chaff, you should be
+able to catch the Orion notification coming out of the mesh towards
+`httpbin.org`. It should look something like
+
+    POST /post HTTP/1.1
+    host: httpbin.org:80
+    fiware-servicepath: /
+    fiware-correlator: 449ec094-82fe-11ea-a8d6-0242ac110013
+    ngsiv2-attrsformat: normalized
+    header: eyJAdHlwZSI6ImlkczpSZXN1bH...(Orion's DAPS identity)...
+    ...
+
+    {"subscriptionId":"5e9d82045bfa0aeb50e8e21e",
+     "data":[{
+         "id":"Room1",
+         "type":"Room",
+         "temperature":{"type":"Float","value":21.5,"metadata":{}}}]}
+
+Smoking can badly damage your health, so I won't encourage you to try
+any more smoke tests but surely we've set the scene for your own,
+hopefully smoke-free, tests.
 
 ##### Access-control with AuthZ
 

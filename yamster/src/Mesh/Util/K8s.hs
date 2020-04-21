@@ -4,6 +4,7 @@ module Mesh.Util.K8s
   , ServiceType (..)
   , Protocol (..)
   , Port (..)
+  , ContainerCommand (..)
   , ServiceSpec (..)
   , serviceFqn
   , chooseServiceName
@@ -16,6 +17,7 @@ import Prelude.Unicode
 import Data.Default (Default (..))
 import Data.Maybe (fromMaybe)
 import Peml
+
 
 
 data ImagePullPolicy = IfNotPresent | Never
@@ -55,6 +57,34 @@ instance ToPeml Port where
     "port"             =:  servicePort
     "targetPort"       =:  chooseContainerPort p
 
+
+data ContainerCommand = Cmd { program ∷ String, args ∷ [String] }
+                      | CmdStr String
+                      | ContainerDefault
+                      deriving Show
+-- Cmd "mongodb" ["--bind_ip_all", "--smallfiles"]
+-- Cmd "/bin/bash" ["-c", "sleep 4 && start-pgm"]
+-- CmdStr "mongod --bind_ip_all --smallfiles"
+
+instance Default ContainerCommand where
+  def = ContainerDefault
+
+tagList ∷ ToPeml ξ ⇒ String → [ξ] → ExprBuilder
+tagList name = (name =:) ∘ mapM_ (-:)
+
+tagCommand ∷ String → ContainerCommand → ExprBuilder
+tagCommand _ ContainerDefault = skip
+tagCommand name Cmd{..}       = tagList name $ program:args
+tagCommand name (CmdStr cmd)  = tagList name ∘ words $ cmd  -- (*)
+-- (*) TODO CmdStr parsing.
+-- Ideally we should handle quotes so that e.g.
+--     "bash -c \"sleep 4 && start-pgm\""
+-- gets parsed to
+--     ["bash", "-c", "sleep 4 && start-pgm"]
+-- instead of (what words does)
+--     ["bash", "-c", "\"sleep", "4", "&&", "start-pgm\""]
+
+
 data ServiceSpec = ServiceSpec
   { serviceName     ∷ String
   , metaName        ∷ Maybe String -- default: serviceName    (*)
@@ -65,7 +95,7 @@ data ServiceSpec = ServiceSpec
   , ports           ∷ [Port]
   , image           ∷ String
   , imagePullPolicy ∷ ImagePullPolicy -- default: IfNotPresent
-  , command         ∷ Maybe String -- e.g. "mongod --bind_ip_all --smallfiles"
+  , command         ∷ ContainerCommand
   , withSideCar     ∷ Bool -- default: True, i.e. let Istio add sidecar
   }
   deriving Show
@@ -121,13 +151,10 @@ container ServiceSpec{..} = do
   "name" =: serviceName
   "image" =: image
   "imagePullPolicy" =: show imagePullPolicy
-  maybe skip ("command" =:) args
+  tagCommand "command" command
   "ports" =: do
     mapM_ (-:) namedPorts
   where
-    args = fmap splitArgs command
-    splitArgs = mapM_ (-:) ∘ words
-
     namedPorts = fmap namePort ports  -- (*)
     namePort (p @ Port{..}) = do
       "name" =: fromMaybe "" portName

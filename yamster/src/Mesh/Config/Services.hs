@@ -13,23 +13,18 @@ httpbin = def
   , version     = Just "v1"
   , image       = "docker.io/kennethreitz/httpbin"
   , ports       =
-    [ def { portName      = Just "http"
-          , servicePort   = 8000
-          , containerPort = Just 80
-          , externalPort  = Just 80
-          }
+    [ http { servicePort   = 8000
+           , containerPort = Just 80
+           , externalPort  = Just 80
+           }
     ]
   }
 
 orionadapterHttpEndpoint ∷ Port
-orionadapterHttpEndpoint = def { portName    = Just "http"
-                               , servicePort = 54321
-                               }
+orionadapterHttpEndpoint = http { servicePort = 54321 }
 
 orionadapterGrpcEndpoint ∷ Port
-orionadapterGrpcEndpoint = def { portName    = Just "grpc"
-                               , servicePort = 43210
-                               }
+orionadapterGrpcEndpoint = grpc { servicePort = 43210 }
 
 orionadapter ∷ ServiceSpec
 orionadapter = def
@@ -44,9 +39,7 @@ orionadapter = def
   }
 
 mockdapsHttpsEndpoint ∷ Port
-mockdapsHttpsEndpoint = def { portName    = Just "https"
-                            , servicePort = 44300
-                            }
+mockdapsHttpsEndpoint = https { servicePort = 44300 }
 
 mockdaps ∷ ServiceSpec
 mockdaps = def
@@ -61,35 +54,47 @@ mockdaps = def
 -- WARNING. only use for testing as DB data isn't persisted!
 mongodb ∷ ServiceSpec
 mongodb = def
-  { serviceName     = "mongodb"
-  , image           = "mongo:3.6"
-  , command         = Just "mongod --bind_ip_all --smallfiles"
-  , ports           =
-    [ def { portName      = Just "mongo"
-          , servicePort   = 27017
-          }
-    ]
+  { serviceName = "mongodb"
+  , image       = "mongo:3.6"
+  , command     = CmdStr "mongod --bind_ip_all --smallfiles"
+  , ports       = [ mongo { servicePort = 27017 } ]
   , withSideCar = False
   }
+
+
+startOrion ∷ ContainerCommand
+startOrion = Cmd "bash" ["-c", script]
+  where
+    script =  "sleep 10; "  -- (*)
+           ++ "exec /usr/bin/contextBroker -fg -multiservice -ngsiv1Autocast "
+           ++ "-dbhost " ++ serviceName mongodb
+           ++ " -logLevel DEBUG"
+-- NOTE
+-- (*) Poor man's approach to start-up race conditions and service
+-- dependencies.
+-- See: https://github.com/orchestracities/boost/issues/28
+--
 
 orion ∷ ServiceSpec
 orion = def
   { serviceName     = "orion"
   , image           = "fiware/orion:2.2.0"
-  , command         = Just $
-                      "/usr/bin/contextBroker -fg -multiservice " ++
-                      "-ngsiv1Autocast -dbhost " ++ serviceName mongodb ++
-                      " -logLevel DEBUG"
+  , command         = startOrion
   , ports           =
-    [ def { portName      = Just "ngsi"
-          , servicePort   = 1026
-          , externalPort  = Just 1026  -- (*)
-          }
+    [ http                         -- (1)
+      { servicePort   = 1026
+      , externalPort  = Just 1026  -- (2)
+      }
     ]
-  , withSideCar = False
   }
 --
--- (*) NOTE. Custom external ports.
+-- NOTE
+-- (1) Port name. Surely `ngsi` would make more sense here, but if we
+-- set it to anything else than `http`, then the sidecar stops forwarding
+-- messages to Orion. Uh, WTH.
+-- See: https://github.com/orchestracities/boost/issues/28
+--
+-- (2) Custom external ports.
 -- The Istio demo profile exposes some common ports like 80 and 443
 -- through load-balancer cluster ports 30072 and 31515, respectively.
 -- We have to add our Orion port manually to the load balancer config:

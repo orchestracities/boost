@@ -6,7 +6,7 @@ metadata:
   name: orion
 spec:
   ports:
-  - name: ngsi
+  - name: http
     port: 1026
     protocol: TCP
     targetPort: 1026
@@ -29,25 +29,17 @@ spec:
       app: orion
   template:
     metadata:
-      annotations:
-        "scheduler.alpha.kubernetes.io/critical-pod": ""
-        sidecar.istio.io/inject: "false"
       labels:
         app: orion
     spec:
       containers:
       - command:
-        - /usr/bin/contextBroker
-        - "-fg"
-        - "-multiservice"
-        - "-ngsiv1Autocast"
-        - "-dbhost"
-        - mongodb
-        - "-logLevel"
-        - DEBUG
+        - bash
+        - "-c"
+        - "sleep 10; exec /usr/bin/contextBroker -fg -multiservice -ngsiv1Autocast -dbhost mongodb -logLevel DEBUG"
         image: "fiware/orion:2.2.0"
         imagePullPolicy: IfNotPresent
         name: orion
         ports:
         - containerPort: 1026
-          name: ngsi
+          name: http

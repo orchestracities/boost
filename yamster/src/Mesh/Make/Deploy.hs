@@ -84,7 +84,7 @@ deploymentFiles repoRoot = do
   let YamlTargets{..} = yamlTargets b
   let writeS = writeServiceAndDeployment yamsterDir
   let writeR = writeRoutes yamsterDir
-  let writeE = writeExprs yamsterDir ∘ pure
+  let writeE = writeExprs yamsterDir
 
   want [ egress_filter
        , httpbin_service
@@ -96,7 +96,7 @@ deploymentFiles repoRoot = do
        , sample_operator_cfg
        ]
 
-  egress_filter         %> writeE orionEgressFilter
+  egress_filter         %> writeE [orionEgressFilter, httpbinEgressFilter]
   httpbin_service       %> writeS httpbin
   ingress_routing       %> writeR boostGateway
   mock_daps_service     %> writeS mockdaps
