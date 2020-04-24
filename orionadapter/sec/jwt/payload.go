@@ -1,8 +1,6 @@
 package jwt
 
 import (
-	"math"
-	"strconv"
 	"time"
 
 	jot "github.com/dgrijalva/jwt-go"
@@ -43,18 +41,6 @@ func (p Payload) IsEmpty() bool {
 	return len(p) == 0
 }
 
-// Scopes returns the 'scopes' array in the JWT payload. If there's no
-// 'scopes' array or it isn't an array of strings, then return an empty
-// slice.
-func (p Payload) Scopes() []string {
-	switch scopes := p["scopes"].(type) {
-	case []interface{}:
-		return maybeStringSlice(scopes)
-	default:
-		return []string{}
-	}
-}
-
 // ExpiresIn tells for how many seconds from now the token is still valid
 // by looking at the 'exp' standard claim. If there's no 'exp' field, then
 // return 0.
@@ -73,76 +59,35 @@ func (p Payload) ExpirationTime() uint64 {
 	return toUint64(p["exp"])
 }
 
-// conversion functions
-
-func toUint64(x interface{}) uint64 {
-	switch x.(type) {
-	case int8:
-		return intToUint64(int64(x.(int8)))
-	case int16:
-		return intToUint64(int64(x.(int16)))
-	case int32:
-		return intToUint64(int64(x.(int32)))
-	case int64:
-		return intToUint64(x.(int64))
-	case int:
-		return intToUint64(int64(x.(int)))
-	case uint8: // NB in Go, byte = uint8
-		return uint64(x.(uint8))
-	case uint16:
-		return uint64(x.(uint16))
-	case uint32:
-		return uint64(x.(uint32))
-	case uint64:
-		return x.(uint64)
-	case uint:
-		return uint64(x.(uint))
-	case float32:
-		return floatToUint64(float64(x.(float32)))
-	case float64:
-		return floatToUint64(x.(float64))
-	case string:
-		return stringToUint64(x.(string))
-	default:
-		return 0
-	}
+// Scopes returns the 'scopes' array in the JWT payload of a DAPS token.
+// If there's no 'scopes' array or none of its elements is a string, then
+// return an empty slice. Otherwise, return a slice with the string elements
+// found in the 'scopes' array, in the same order in which they appear.
+func (p Payload) Scopes() []string {
+	return toListOfString(p["scopes"])
 }
 
-func intToUint64(x int64) uint64 {
-	if x <= 0 {
-		return 0
+// Roles returns all KeyRock role names in sight from the JWT payload of a
+// KeyRock token, removing any duplicates and empty strings.
+// More accurately, consider the set of all name attributes of role objects
+// found in top level 'organizations' and 'roles' array. Out of this set,
+// list those names having a non-empty string value, sorting them in
+// ascending alphabetical order.
+func (p Payload) Roles() []string {
+	roles := make([]map[string]interface{}, 0, 256)
+	for _, org := range toListOfMap(p["organizations"]) {
+		xs := toListOfMap(org["roles"])
+		roles = append(roles, xs...)
 	}
-	return uint64(x)
-}
+	ys := toListOfMap(p["roles"])
+	roles = append(roles, ys...)
 
-func floatToUint64(x float64) uint64 {
-	y := math.Floor(x)
-	if y <= 0 {
-		return 0
-	}
-	if y >= math.MaxUint64 {
-		return math.MaxUint64
-	}
-	return uint64(y)
-}
-
-func stringToUint64(x string) uint64 {
-	y, err := strconv.ParseFloat(x, 64)
-	if err != nil {
-		return 0
-	}
-	return floatToUint64(y)
-}
-
-func maybeStringSlice(xs []interface{}) []string {
-	size := len(xs)
-	ys := make([]string, size, size)
-	for i, x := range xs {
-		if y, ok := x.(string); ok {
-			ys[i] = y
-		} else {
-			return []string{}
+	names := collectStrings("name", roles)
+	nameSet := make([]string, 0, len(names))
+	for _, n := range dedupeStrings(names) {
+		if n != "" {
+			nameSet = append(nameSet, n)
 		}
 	}
-	return ys
+	return nameSet
 }
