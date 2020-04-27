@@ -12,6 +12,15 @@ func unexpectedSigningMethodError(algo interface{}) *jot.ValidationError {
 	return jot.NewValidationError(msg, jot.ValidationErrorSignatureInvalid)
 }
 
+func ensureHmacSigning(key []byte) jot.Keyfunc {
+	return func(t *jot.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jot.SigningMethodHMAC); !ok {
+			return nil, unexpectedSigningMethodError(t.Header["alg"])
+		}
+		return key, nil
+	}
+}
+
 func ensureRsaSigning(key *rsa.PublicKey) jot.Keyfunc {
 	return func(t *jot.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jot.SigningMethodRSA); !ok {
@@ -44,6 +53,14 @@ For a better explanation of the problem, see e.g.
 - https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/
 */
 
+func parseAndValidate(kf jot.Keyfunc, jwtData string) (Payload, error) {
+	token, err := jot.Parse(jwtData, kf)
+	if err != nil {
+		return nil, err
+	}
+	return fromMapClaims(token), nil
+}
+
 // Validate the input JWT data and verify its provenance using the specified
 // RSA public key in PEM format.
 // Make sure the following is true:
@@ -64,9 +81,13 @@ func Validate(pubKeyPemRep string, jwtData string) (Payload, error) {
 	if err != nil {
 		return nil, err
 	}
-	token, err := jot.Parse(jwtData, ensureRsaSigning(key))
-	if err != nil {
-		return nil, err
-	}
-	return fromMapClaims(token), nil
+	return parseAndValidate(ensureRsaSigning(key), jwtData)
+}
+
+// ValidateHMAC is a variant of Validate which uses an HMAC secret key for
+// signature verification instead of an RSA public key. All the rest is the
+// same.
+func ValidateHMAC(secret string, jwtData string) (Payload, error) {
+	key := []byte(secret)
+	return parseAndValidate(ensureHmacSigning(key), jwtData)
 }
