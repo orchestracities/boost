@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/orchestracities/boost/orionadapter/sec/authz/xacml"
 )
 
 // Client talks to an AuthZ server. Never instantiate one directly,
@@ -39,7 +41,7 @@ func (c *Client) Authorize(r *Request) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return IsPermitDecision(authzResponse)
+	return xacml.IsPermitDecision(authzResponse)
 }
 
 // TODO: proper handling of HTTP response errors.
