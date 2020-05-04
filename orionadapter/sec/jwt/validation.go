@@ -12,6 +12,11 @@ func unexpectedSigningMethodError(algo interface{}) *jot.ValidationError {
 	return jot.NewValidationError(msg, jot.ValidationErrorSignatureInvalid)
 }
 
+func outsideAllowedTimeIntervalError() *jot.ValidationError {
+	msg := "current time not in [nbf, exp) interval"
+	return jot.NewValidationError(msg, jot.ValidationErrorClaimsInvalid)
+}
+
 func ensureHmacSigning(key []byte) jot.Keyfunc {
 	return func(t *jot.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jot.SigningMethodHMAC); !ok {
@@ -54,11 +59,20 @@ For a better explanation of the problem, see e.g.
 */
 
 func parseAndValidate(kf jot.Keyfunc, jwtData string) (Payload, error) {
-	token, err := jot.Parse(jwtData, kf)
+	p := &jot.Parser{SkipClaimsValidation: true}
+	// rolling out our own claims validation since jwt-go can't cut it.
+	// see: https://github.com/orchestracities/boost/issues/14
+
+	token, err := p.Parse(jwtData, kf)
 	if err != nil {
 		return nil, err
 	}
-	return fromMapClaims(token), nil
+
+	payload := fromMapClaims(token)
+	if !payload.IsWithinAllowedTimeInterval() {
+		return nil, outsideAllowedTimeIntervalError()
+	}
+	return payload, nil
 }
 
 // Validate the input JWT data and verify its provenance using the specified
@@ -67,15 +81,9 @@ func parseAndValidate(kf jot.Keyfunc, jwtData string) (Payload, error) {
 //
 // * token is well-formed;
 // * token got signed with the private key paired to the input pub key;
-// * if present, exp ("expires at") contains a date in the future;
-// * if present, iat ("issued at") contains a date in the past;
-// * if present, nbf ("not before") contains a date in the past.
-//
-// Warning. To jwt-go a field with a 0 value is the same as the field not
-// being there! So e.g. this token
-//    { alg: RS256 }.{ exp: 0 }.valid-rs256-signature
-// passes validation even though it expired at the beginning of the epoch!
-// Oh well.
+// * current time falls within the 'nbf' ("not before" claim) and 'exp'
+//   ("expiry time") bounds---see Payload.IsWithinAllowedTimeInterval
+//   for details.
 func Validate(pubKeyPemRep string, jwtData string) (Payload, error) {
 	key, err := ToRsaPubKey(pubKeyPemRep)
 	if err != nil {

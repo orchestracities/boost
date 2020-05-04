@@ -3,7 +3,6 @@ package jwt
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	jot "github.com/dgrijalva/jwt-go"
 )
@@ -100,45 +99,5 @@ func TestFromRawWithInvalidSignature(t *testing.T) {
 		if wantExp != got.ExpirationTime() {
 			t.Errorf("[%v] want exp: %v; got: %v", k, wantExp, got)
 		}
-	}
-}
-
-var expiresInFixtures = []struct {
-	exp interface{}
-	lo  uint64
-	hi  uint64
-}{
-	{-12.3, 0, 0}, {0, 0, 0}, {time.Now().Unix(), 0, 0},
-	{float64(time.Now().Unix()) + 0.1, 0, 0},
-	{time.Now().Unix() + 10, 5, 10},
-}
-
-func TestExpiresIn(t *testing.T) {
-	for k, d := range expiresInFixtures {
-		payload := Payload{
-			"exp": d.exp,
-		}
-		got := payload.ExpiresIn()
-		if got < d.lo || got > d.hi {
-			t.Errorf("[%v] want: ∈ [%v, %v]; got: %v", k, d.lo, d.hi, got)
-		}
-	}
-}
-
-func TestExpiresInWhenMissingExp(t *testing.T) {
-	payload := Payload{}
-	got := payload.ExpiresIn()
-	want := uint64(0)
-	if got != want {
-		t.Errorf("want: %v; got: %v", want, got)
-	}
-}
-
-func TestExpirationTimeWhenMissingExp(t *testing.T) {
-	payload := Payload{}
-	got := payload.ExpirationTime()
-	want := uint64(0)
-	if got != want {
-		t.Errorf("want: %v; got: %v", want, got)
 	}
 }

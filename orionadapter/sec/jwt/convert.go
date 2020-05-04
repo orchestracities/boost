@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"time"
 )
 
 // safe conversion functions
@@ -84,6 +85,19 @@ func dedupeStrings(xs []string) []string {
 	return ks
 }
 
+func isNumeric(x interface{}) bool {
+	switch x.(type) {
+	case int8, int16, int32, int64, int, uint8, uint16, uint32, uint64,
+		uint, float32, float64: // NB in Go, byte = uint8
+		return true
+	case string:
+		_, err := strconv.ParseFloat(x.(string), 64)
+		return err == nil
+	default:
+		return false
+	}
+}
+
 func toUint64(x interface{}) uint64 {
 	switch x.(type) {
 	case int8:
@@ -141,4 +155,17 @@ func stringToUint64(x string) uint64 {
 		return 0
 	}
 	return floatToUint64(y)
+}
+
+func toString(x interface{}) string {
+	switch x.(type) {
+	case string:
+		return x.(string)
+	default:
+		return ""
+	}
+}
+
+func secondsSinceEpoch() uint64 {
+	return toUint64(time.Now().Unix())
 }

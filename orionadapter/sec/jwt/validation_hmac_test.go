@@ -82,6 +82,8 @@ func TestHmacInvalidSignature(t *testing.T) {
 var hmacExpiredToken = []struct {
 	jwt string
 }{
+	// { alg: HS256 }.{ exp: 0 }.signature
+	{"eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjB9.w4syZjmIvYTTez_arMtAZshaWVoOWGlww3VAJZvTXkM"},
 	// { alg: HS256 }.{ exp: 1 }.signature
 	{"eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjF9.s2gjeoKI5LUgqXbo2t8JPCJZD0AEEGWJNdNh-I80mac"},
 	// { alg: HS256 }.{ exp: 1578569936 }.signature (~= 09 Jan 2020 @ 12:30pm)
@@ -99,10 +101,6 @@ func TestHmacExpiredToken(t *testing.T) {
 var validHmacToken = []struct {
 	jwt string
 }{
-	// { alg: HS256 }.{ exp: 0 }.signature
-	// amazingly, this will pass validation since to jwt-go `exp = 0` is the
-	// same as `exp` not being there! Oh deary deary...
-	{"eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjB9.w4syZjmIvYTTez_arMtAZshaWVoOWGlww3VAJZvTXkM"},
 	//{alg: HS256}.{}.signature
 	{emptyHmacToken},
 	// { alg: HS256, typ: JWT }.{ exp: 33134745600, foo: bar }.signature
