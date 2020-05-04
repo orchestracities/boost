@@ -134,6 +134,51 @@ func (p Payload) IsWithinAllowedTimeInterval() bool {
 //      2    2   ==> nbf ≤ now < exp
 //
 
+// Issuer reads the value of the 'iss' standard claim. If there's no
+// 'iss' field, then return empty.
+func (p Payload) Issuer() string {
+	return toString(p["iss"])
+}
+
+// Subject reads the value of the 'sub' standard claim. If there's no
+// 'sub' field, then return empty.
+func (p Payload) Subject() string {
+	return toString(p["sub"])
+}
+
+// Custom claims
+
+// SubjectCommonName extracts the subject common name in the JWT payload of
+// a DAPS token. If there's no 'sub' field or it doesn't contain a parsable
+// 'CN' element, return empty.
+func (p Payload) SubjectCommonName() string {
+	if parsed, ok := parseSubjectCommonName(p.Subject()); ok {
+		return parsed
+	}
+	return ""
+}
+
+// idsAttributes returns the raw 'ids_attributes' value or empty if there's
+// no 'idsAttributes' field.
+func (p Payload) idsAttributes() map[string]interface{} {
+	return toMap(p["ids_attributes"])
+}
+
+// SecProfileAuditLogging reads the value of the IDS audit logging field
+// as a string from a DAPS JWT. If the field isn't there, return empty.
+func (p Payload) SecProfileAuditLogging() string {
+	attrs := p.idsAttributes()
+	secProfile := toMap(attrs["security_profile"])
+	return stringify(secProfile["audit_logging"])
+}
+
+// Membership reads the value of the IDS membership field as a string from
+// a DAPS JWT. If the field isn't there, return empty.
+func (p Payload) Membership() string {
+	attrs := p.idsAttributes()
+	return stringify(attrs["membership"])
+}
+
 // Scopes returns the 'scopes' array in the JWT payload of a DAPS token.
 // If there's no 'scopes' array or none of its elements is a string, then
 // return an empty slice. Otherwise, return a slice with the string elements
@@ -165,4 +210,16 @@ func (p Payload) Roles() []string {
 		}
 	}
 	return nameSet
+}
+
+// AppID reads the value of the 'app_id' from a KeyRock JWT. If the field isn't
+// there or isn't a string, return empty.
+func (p Payload) AppID() string {
+	return toString(p["app_id"])
+}
+
+// AppAzfDomain reads the value of the 'app_azf_domain' from a KeyRock JWT.
+// If the field isn't there or isn't a string, return empty.
+func (p Payload) AppAzfDomain() string {
+	return toString(p["app_azf_domain"])
 }

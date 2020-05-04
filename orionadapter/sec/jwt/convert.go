@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -164,6 +165,13 @@ func toString(x interface{}) string {
 	default:
 		return ""
 	}
+}
+
+func stringify(x interface{}) string {
+	if x != nil {
+		return fmt.Sprintf("%v", x)
+	}
+	return ""
 }
 
 func secondsSinceEpoch() uint64 {
