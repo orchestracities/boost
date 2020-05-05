@@ -57,13 +57,13 @@ var requestWithMissingIssuerAndService = `<?xml version="1.0" encoding="UTF-8"?>
       <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">role4</AttributeValue>
     </Attribute>
     <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_audit_logging" IncludeInResult="false">
-      <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">2</AttributeValue>
+      <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">3</AttributeValue>
     </Attribute>
     <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_pseudo_second_element" IncludeInResult="false">
       <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">ids_security_profile_pseudo_second_element</AttributeValue>
     </Attribute>
     <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_membership" IncludeInResult="false">
-      <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#boolean">true</AttributeValue>
+      <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#boolean">false</AttributeValue>
     </Attribute>
     <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_scope" IncludeInResult="false">
       <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">ids_connector</AttributeValue>
@@ -93,14 +93,8 @@ var requestWithMissingIssuerAndService = `<?xml version="1.0" encoding="UTF-8"?>
 var minimalRequest = `<?xml version="1.0" encoding="UTF-8"?>
 <Request xmlns="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17" CombinedDecision="false" ReturnPolicyIdList="false">
   <Attributes Category="urn:oasis:names:tc:xacml:1.0:subject-category:access-subject">
-    <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_audit_logging" IncludeInResult="false">
-      <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">2</AttributeValue>
-    </Attribute>
     <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_pseudo_second_element" IncludeInResult="false">
       <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">ids_security_profile_pseudo_second_element</AttributeValue>
-    </Attribute>
-    <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_membership" IncludeInResult="false">
-      <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#boolean">true</AttributeValue>
     </Attribute>
   </Attributes>
   <Attributes Category="urn:oasis:names:tc:xacml:3.0:attribute-category:resource"/>

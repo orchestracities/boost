@@ -13,9 +13,9 @@ func fwKeyRockRole(roles []string) xNode {
 	return attr(id).children(listOfStringAttr(roles)...)
 }
 
-func idsSecurityProfileAuditLogging() xNode {
+func idsSecurityProfileAuditLogging(auditLogging string) xNode {
 	id := "urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_audit_logging"
-	return attr(id).children(stringAttr("2"))
+	return attr(id).children(stringAttr(auditLogging))
 }
 
 func idsSecurityProfilePseudoSecondElement() xNode {
@@ -24,9 +24,9 @@ func idsSecurityProfilePseudoSecondElement() xNode {
 		stringAttr("ids_security_profile_pseudo_second_element"))
 }
 
-func idsMembership() xNode {
+func idsMembership(membership bool) xNode {
 	id := "urn:oasis:names:tc:xacml:2.0:subject:ids_membership"
-	return attr(id).children(boolAttr(true))
+	return attr(id).children(boolAttr(membership))
 }
 
 func idsScopes(scopes []string) xNode {

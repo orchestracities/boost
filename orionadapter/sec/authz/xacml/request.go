@@ -1,19 +1,35 @@
 package xacml
 
 import (
+	"strconv"
 	"strings"
 )
 
 // Request holds the data to do an access control check with the AuthZ server.
 type Request struct {
-	KeyRockRoles  []string
-	IdsScopes     []string
-	ConnectorID   string
-	DapsIssuer    string
-	ResourceID    string
+	Daps          Daps
+	KeyRock       KeyRock
+	FiwareService string
 	RequestPath   string
 	RequestVerb   string
-	FiwareService string
+}
+
+// Daps holds the DAPS-specific data to do an access control check with the
+// AuthZ server.
+type Daps struct {
+	ConnectorID            string
+	Issuer                 string
+	Membership             string
+	Scopes                 []string
+	SecProfileAuditLogging string
+}
+
+// KeyRock holds the KeyRock-specific data to do an access control check
+// with the AuthZ server.
+type KeyRock struct {
+	AppID        string
+	AppAzfDomain string
+	Roles        []string
 }
 
 // ToXML serializes the request to XACML format.
@@ -25,16 +41,16 @@ func (r *Request) ToXML() string {
 func (r *Request) buildRequestAst() xNode {
 	ast := request().children(
 		accessSubject().children(
-			maybeA(fwKeyRockRole, r.KeyRockRoles),
-			idsSecurityProfileAuditLogging(),
+			maybeA(fwKeyRockRole, r.KeyRock.Roles),
+			maybe(idsSecurityProfileAuditLogging, r.Daps.SecProfileAuditLogging),
 			idsSecurityProfilePseudoSecondElement(),
-			idsMembership(),
-			maybeA(idsScopes, r.IdsScopes),
-			maybe(idsDapsIss, r.DapsIssuer),
-			maybe(idsDapsSubConnectorCN, r.ConnectorID),
+			maybeBool(idsMembership, r.Daps.Membership),
+			maybeA(idsScopes, r.Daps.Scopes),
+			maybe(idsDapsIss, r.Daps.Issuer),
+			maybe(idsDapsSubConnectorCN, r.Daps.ConnectorID),
 		),
 		resource().children(
-			maybe(resourceID, r.ResourceID),
+			maybe(resourceID, r.KeyRock.AppID),
 			maybe(requestPath, r.RequestPath),
 			maybe(requestFiwareService, r.FiwareService),
 		),
@@ -64,6 +80,15 @@ func filterContent(xs []string) []string {
 func maybe(f func(string) xNode, v string) xNode {
 	if hasContent(v) {
 		return f(v)
+	}
+	return emptyNode()
+}
+
+func maybeBool(f func(bool) xNode, v string) xNode {
+	if hasContent(v) {
+		if b, err := strconv.ParseBool(v); err == nil {
+			return f(b)
+		}
 	}
 	return emptyNode()
 }
