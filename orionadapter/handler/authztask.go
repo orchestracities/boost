@@ -15,19 +15,22 @@ import (
 
 type authZCallData struct {
 	consumerHeader string
+	authzToken     string
 	serverURL      string
 	request        *xacml.Request
 }
 
 func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
-	claims jwt.Payload) (*authZCallData, error) {
-	serverURL, request, err := buildAuthZRequest(params, instance, claims)
+	consumerClaims, userClaims jwt.Payload) (*authZCallData, error) {
+	serverURL, request, err :=
+		buildAuthZRequest(params, instance, consumerClaims, userClaims)
 	if err != nil {
 		return nil, err
 	}
 
 	return &authZCallData{
-		consumerHeader: instance.ClientToken,
+		consumerHeader: instance.IdsConsumerHeader,
+		authzToken:     instance.IdsAuthzToken,
 		serverURL:      serverURL,
 		request:        request,
 	}, nil
@@ -50,16 +53,21 @@ func (d *authZCallData) cacheAuthZDecision(authorized bool) (ok bool) {
 }
 
 func authorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params,
-	claims jwt.Payload) (err *od.HandleOrionadapterResponse) {
+	consumerClaims jwt.Payload) (err *od.HandleOrionadapterResponse) {
 	if isAuthZEnabled(params) {
-		return doAuthorizeWithAuthZ(r, params, claims)
+		return doAuthorizeWithAuthZ(r, params, consumerClaims)
 	}
 	return nil
 }
 
 func doAuthorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params,
-	claims jwt.Payload) (err *od.HandleOrionadapterResponse) {
-	z, zErr := newAuthZCall(params, r.Instance, claims)
+	consumerClaims jwt.Payload) (err *od.HandleOrionadapterResponse) {
+	userClaims, err := validateUser(r, params)
+	if err != nil {
+		return err
+	}
+
+	z, zErr := newAuthZCall(params, r.Instance, consumerClaims, userClaims)
 	if zErr != nil {
 		z.logConfigError(zErr)
 		return authzError()
@@ -92,16 +100,21 @@ func doAuthorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params
 }
 
 func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
-	claims jwt.Payload) (string, *xacml.Request, error) {
+	consumerClaims, userClaims jwt.Payload) (string, *xacml.Request, error) {
 	url, err := getAuthZServerURL(p, nil)
-	rid, err := getAuthZResourceID(p, err)
 
 	return url, &xacml.Request{
 		Daps: xacml.Daps{
-			Scopes: claims.Scopes(),
+			ConnectorID:            consumerClaims.SubjectCommonName(),
+			Issuer:                 consumerClaims.Issuer(),
+			Membership:             consumerClaims.Membership(),
+			Scopes:                 consumerClaims.Scopes(),
+			SecProfileAuditLogging: consumerClaims.SecProfileAuditLogging(),
 		},
 		KeyRock: xacml.KeyRock{
-			AppID: rid,
+			AppID:        userClaims.AppID(),
+			AppAzfDomain: userClaims.AppAzfDomain(),
+			Roles:        userClaims.Roles(),
 		},
 		FiwareService: instance.FiwareService,
 		RequestPath:   instance.RequestPath,

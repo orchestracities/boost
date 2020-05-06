@@ -139,9 +139,10 @@ func getAuthZServerURL(p *config.Params, e error) (string, error) {
 	return ensureString("AuthZ.ServerURL", getAuthZ(p).ServerUrl)
 }
 
-func getAuthZResourceID(p *config.Params, e error) (string, error) {
+func getAuthZHs256SharedSecret(p *config.Params, e error) (string, error) {
 	if e != nil {
 		return "", e
 	}
-	return ensureString("AuthZ.ResourceID", getAuthZ(p).ResourceId)
+	return ensureString("AuthZ.Hs256SharedSecret",
+		getAuthZ(p).Hs256SharedSecret)
 }

@@ -21,6 +21,9 @@ import Mesh.Util.K8s (ServiceSpec(..), Port(..), chooseServiceName, serviceFqn)
 idsSecHeaderName ∷ String
 idsSecHeaderName = "header"
 
+idsAuthzTokenHeaderName ∷ String
+idsAuthzTokenHeaderName = "X-AUTH-TOKEN"
+
 fiwareServiceHeaderName ∷ String
 fiwareServiceHeaderName = "fiware-service"
 
@@ -80,8 +83,8 @@ instance AdapterSpec OrionAdapterSpec where
       "server_certificate" =: dapsServerCertificate pki
     "authz" =: do
       "enabled" =: False
-      "server_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains/CYYY_V2IEeqMJKbegCuurA/pdp"
-      "resource_id" =: "b3a4a7d2-ce61-471f-b05d-fb82452ae686"
+      "server_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/"
+      "hs256_shared_secret" =: "d3eafd0101866b21"
 
   templateName = const "oriondata"
 
@@ -89,7 +92,8 @@ instance AdapterSpec OrionAdapterSpec where
     "request_method" =: "request.method"
     "request_path" =: "request.path"
     "fiware_service" =: header fiwareServiceHeaderName
-    "client_token" =: header idsSecHeaderName
+    "ids_consumer_header" =: header idsSecHeaderName
+    "ids_authz_token" =: header idsAuthzTokenHeaderName
     where
       header name = "request.headers[\"" ++ name ++ "\"] | \"\""
 

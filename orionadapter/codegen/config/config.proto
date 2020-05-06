@@ -34,9 +34,12 @@ message AuthZ {
     // should the adapter use AuthZ?
     bool enabled = 1;
     // AuthZ authorisation endpoint.
+    // e.g. 'http://your.authz', 'https://your.authz:44300'
     string server_url = 2;
-    // TODO: should this be the same as Daps.connector_id?
-    string resource_id = 3;
+    // HS256 shared secret to validate IDS authorization tokens.
+    // TODO: rather store somewhere else, see
+    // - https://github.com/orchestracities/boost/issues/15
+    string hs256_shared_secret = 3;
 }
 
 // config for orionadapter
