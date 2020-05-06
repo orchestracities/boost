@@ -2,7 +2,7 @@ package cache
 
 import (
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
-	"github.com/orchestracities/boost/orionadapter/sec/authz"
+	"github.com/orchestracities/boost/orionadapter/sec/authz/xacml"
 )
 
 func asBool(value interface{}, found bool) (bool, bool) {
@@ -46,7 +46,7 @@ func LookupDapsIDToken() (token string, found bool) {
 
 // LookupAuthZDecision gets any cached AuthZ decision for the specified
 // call parameters. Use the found flag to tell if the lookup was successful.
-func LookupAuthZDecision(idsConsumerHeader string, callParams *authz.Request) (
+func LookupAuthZDecision(idsConsumerHeader string, callParams *xacml.Request) (
 	authorized bool, found bool) {
 	key, _, err := authZCallKey(idsConsumerHeader, callParams)
 	if err != nil {

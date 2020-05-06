@@ -9,13 +9,14 @@ import (
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	"github.com/orchestracities/boost/orionadapter/sec/authz"
+	"github.com/orchestracities/boost/orionadapter/sec/authz/xacml"
 	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
 type authZCallData struct {
 	consumerHeader string
 	serverURL      string
-	request        *authz.Request
+	request        *xacml.Request
 }
 
 func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
@@ -33,7 +34,10 @@ func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
 }
 
 func (d *authZCallData) authZize() (authorized bool, e error) {
-	client := authz.NewClient(d.serverURL)
+	client, err := authz.NewClient(d.serverURL)
+	if err != nil {
+		return false, err
+	}
 	return client.Authorize(d.request)
 }
 
@@ -88,16 +92,20 @@ func doAuthorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params
 }
 
 func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
-	claims jwt.Payload) (string, *authz.Request, error) {
+	claims jwt.Payload) (string, *xacml.Request, error) {
 	url, err := getAuthZServerURL(p, nil)
 	rid, err := getAuthZResourceID(p, err)
 
-	return url, &authz.Request{
-		Roles:         claims.Scopes(),
-		ResourceID:    rid,
-		ResourcePath:  instance.RequestPath,
+	return url, &xacml.Request{
+		Daps: xacml.Daps{
+			Scopes: claims.Scopes(),
+		},
+		KeyRock: xacml.KeyRock{
+			AppID: rid,
+		},
 		FiwareService: instance.FiwareService,
-		Action:        instance.RequestMethod,
+		RequestPath:   instance.RequestPath,
+		RequestVerb:   instance.RequestMethod,
 	}, err
 }
 

@@ -2,7 +2,7 @@ package cache
 
 import (
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
-	"github.com/orchestracities/boost/orionadapter/sec/authz"
+	"github.com/orchestracities/boost/orionadapter/sec/authz/xacml"
 	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
@@ -27,7 +27,7 @@ func PutDapsIDToken(jwtData string) (ok bool) {
 
 // PutAuthZDecision caches an AuthZ decision. Use the ok flag to tell if the
 // operation was successful.
-func PutAuthZDecision(idsConsumerHeader string, callParams *authz.Request,
+func PutAuthZDecision(idsConsumerHeader string, callParams *xacml.Request,
 	authorized bool) (ok bool) {
 	key, jwtData, err := authZCallKey(idsConsumerHeader, callParams)
 	if err != nil {
