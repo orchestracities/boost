@@ -146,3 +146,10 @@ func getAuthZHs256SharedSecret(p *config.Params, e error) (string, error) {
 	return ensureString("AuthZ.Hs256SharedSecret",
 		getAuthZ(p).Hs256SharedSecret)
 }
+
+func getAuthZCacheDecisionMaxSeconds(p *config.Params, e error) (uint64, error) {
+	if e != nil {
+		return 0, e
+	}
+	return getAuthZ(p).CacheDecisionMaxSeconds, nil
+}

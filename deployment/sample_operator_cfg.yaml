@@ -9,6 +9,7 @@ spec:
     address: "orionadapterservice:43210"
   params:
     authz:
+      cache_decision_max_seconds: 3600
       enabled: false
       hs256_shared_secret: d3eafd0101866b21
       server_url: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/"

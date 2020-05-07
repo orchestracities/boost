@@ -85,6 +85,7 @@ instance AdapterSpec OrionAdapterSpec where
       "enabled" =: False
       "server_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/"
       "hs256_shared_secret" =: "d3eafd0101866b21"
+      "cache_decision_max_seconds" =: Z 3600
 
   templateName = const "oriondata"
 

@@ -40,6 +40,11 @@ message AuthZ {
     // TODO: rather store somewhere else, see
     // - https://github.com/orchestracities/boost/issues/15
     string hs256_shared_secret = 3;
+    // Max cache age, in seconds, for AuthZ decisions.
+    // If not present or set to a non-positive value, don't cache decisions.
+    // If a positive value `v`, cache an AuthZ decision for `s` seconds where
+    // `s = min { ttl(consumerJWT), ttl(userJWT), v }`
+    uint64 cache_decision_max_seconds = 4;
 }
 
 // config for orionadapter

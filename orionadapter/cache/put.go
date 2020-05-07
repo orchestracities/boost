@@ -27,12 +27,27 @@ func PutDapsIDToken(jwtData string) (ok bool) {
 
 // PutAuthZDecision caches an AuthZ decision. Use the ok flag to tell if the
 // operation was successful.
-func PutAuthZDecision(idsConsumerHeader string, callParams *xacml.Request,
-	authorized bool) (ok bool) {
-	key, jwtData, err := authZCallKey(idsConsumerHeader, callParams)
+func PutAuthZDecision(idsConsumerHeader, idsAuthzToken string,
+	callParams *xacml.Request, authorized bool, cacheMaxSecs uint64) (ok bool) {
+	key, jwtData, err := authZCallKey(
+		idsConsumerHeader, idsAuthzToken, callParams)
 	if err != nil {
 		return false
 	}
-	ttl := jwt.FromRaw(jwtData).ExpiresIn()
+
+	consumerTTL := jwt.FromRaw(jwtData).ExpiresIn()
+	userTTL := jwt.FromRaw(idsAuthzToken).ExpiresIn()
+	ttl := min(consumerTTL, userTTL, cacheMaxSecs)
+
 	return cached.AuthZ().put(key, authorized, 1, ttl)
+}
+
+func min(x uint64, xs ...uint64) uint64 {
+	m := x
+	for _, y := range xs {
+		if y < m {
+			m = y
+		}
+	}
+	return m
 }

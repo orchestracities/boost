@@ -46,9 +46,9 @@ func LookupDapsIDToken() (token string, found bool) {
 
 // LookupAuthZDecision gets any cached AuthZ decision for the specified
 // call parameters. Use the found flag to tell if the lookup was successful.
-func LookupAuthZDecision(idsConsumerHeader string, callParams *xacml.Request) (
-	authorized bool, found bool) {
-	key, _, err := authZCallKey(idsConsumerHeader, callParams)
+func LookupAuthZDecision(idsConsumerHeader, idsAuthzToken string,
+	callParams *xacml.Request) (authorized bool, found bool) {
+	key, _, err := authZCallKey(idsConsumerHeader, idsAuthzToken, callParams)
 	if err != nil {
 		return false, false
 	}

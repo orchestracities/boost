@@ -18,12 +18,14 @@ type authZCallData struct {
 	authzToken     string
 	serverURL      string
 	request        *xacml.Request
+	cacheMaxSecs   uint64
 }
 
 func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
 	consumerClaims, userClaims jwt.Payload) (*authZCallData, error) {
 	serverURL, request, err :=
 		buildAuthZRequest(params, instance, consumerClaims, userClaims)
+	cacheMaxSecs, err := getAuthZCacheDecisionMaxSeconds(params, err)
 	if err != nil {
 		return nil, err
 	}
@@ -33,6 +35,7 @@ func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
 		authzToken:     instance.IdsAuthzToken,
 		serverURL:      serverURL,
 		request:        request,
+		cacheMaxSecs:   cacheMaxSecs,
 	}, nil
 }
 
@@ -45,11 +48,12 @@ func (d *authZCallData) authZize() (authorized bool, e error) {
 }
 
 func (d *authZCallData) cachedAuthZDecision() (authorized bool, found bool) {
-	return cache.LookupAuthZDecision(d.consumerHeader, d.request)
+	return cache.LookupAuthZDecision(d.consumerHeader, d.authzToken, d.request)
 }
 
 func (d *authZCallData) cacheAuthZDecision(authorized bool) (ok bool) {
-	return cache.PutAuthZDecision(d.consumerHeader, d.request, authorized)
+	return cache.PutAuthZDecision(d.consumerHeader, d.authzToken,
+		d.request, authorized, d.cacheMaxSecs)
 }
 
 func authorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params,
