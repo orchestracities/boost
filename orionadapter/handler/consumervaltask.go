@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
+
 	ilog "istio.io/pkg/log"
 
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
@@ -18,6 +21,7 @@ func validateConsumer(r *od.HandleOrionadapterRequest, params *config.Params) (
 	}
 
 	claims, vErr := validateToken(pubKeyPemRep, r.Instance.IdsConsumerHeader)
+	validateIssuer(r.Instance.IdsConsumerHeader, claims, vErr)
 	if vErr != nil {
 		ilog.Infof("consumer JWT validation failed: %v", vErr)
 		return nil, invalidJWTError()
@@ -32,6 +36,24 @@ func validateToken(pubKey string, headerValue string) (jwt.Payload, error) {
 		return nil, err
 	}
 	return jwt.Validate(pubKey, jwtData)
+}
+
+func validateIssuer(headerValue string, claims jwt.Payload, err error) error {
+	if err != nil {
+		return err
+	}
+
+	headerIssuerID, err := consumer.ReadIssuerConnectorID(headerValue)
+	if err != nil {
+		return err
+	}
+
+	if headerIssuerID != claims.SubjectCommonName() {
+		msg := fmt.Sprintf("issuer connector ID (%v) != subject CN (%v)",
+			headerIssuerID, claims.SubjectCommonName())
+		return errors.New(msg)
+	}
+	return nil
 }
 
 func invalidJWTError() *od.HandleOrionadapterResponse {

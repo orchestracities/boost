@@ -147,6 +147,7 @@ var readConsumerHeaderWithInvalidJSON = []struct {
 	jsonValue string
 }{
 	{`{`}, {`{{`}, {`{{}}`}, {`}`}, {`{in:valid}`},
+	{`{ "issuerConnector": {} }`},
 }
 
 func TestReadConsumerHeaderWithInvalidJSON(t *testing.T) {
@@ -155,5 +156,85 @@ func TestReadConsumerHeaderWithInvalidJSON(t *testing.T) {
 		if _, err := ReadToken(headerValue); err == nil {
 			t.Error("should've returned a JSON parsing error.")
 		}
+	}
+}
+
+func assertReadIssuerConnectorID(t *testing.T, jsonPayload string,
+	index int, want string) {
+	idsHeaderAttr := toB64(jsonPayload)
+	if got, err := ReadIssuerConnectorID(idsHeaderAttr); err != nil {
+		t.Errorf("[%v] want: %v; got error: %v", index, want, err)
+	} else if got != want {
+		t.Errorf("[%v] want: %v; got: %v", index, want, got)
+	}
+}
+
+var readConsumerHeaderWithoutIssuerConnectorField = []struct {
+	jsonValue string
+}{
+	{`{}`}, {`{ "issuerConnector": null }`},
+	{`{ "issuerConnector": "" }`},
+}
+
+func TestReadConsumerHeaderWithoutIssuerConnectorField(t *testing.T) {
+	want := ""
+	for k, d := range readConsumerHeaderWithoutIssuerConnectorField {
+		assertReadIssuerConnectorID(t, d.jsonValue, k, want)
+	}
+}
+
+var readConsumerHeaderWithNoParsableIssuerConnectorField = []struct {
+	jsonValue string
+}{
+	{`{ "issuerConnector": {} }`}, {`{ "issuerConnector": 213 }`},
+	{`{ "issuerConnector": "http://junk host/" }`},
+}
+
+func TestReadConsumerHeaderWithNoParsableIssuerConnectorField(t *testing.T) {
+	for k, d := range readConsumerHeaderWithNoParsableIssuerConnectorField {
+		idsHeaderAttr := toB64(d.jsonValue)
+		if got, err := ReadIssuerConnectorID(idsHeaderAttr); err == nil {
+			t.Errorf("[%v] want error; got: %v", k, got)
+		}
+	}
+}
+
+var readIssuerConnectorIDFixtures = []struct {
+	json string
+	want string
+}{
+	{
+		json: `{ "issuerConnector": "http://host" }`,
+		want: "",
+	},
+	{
+		json: `{ "issuerConnector": "http://host/" }`,
+		want: "",
+	},
+	{
+		json: `{ "issuerConnector": "http://host/123" }`,
+		want: "123",
+	},
+	{
+		json: `{ "issuerConnector": "http://host/123/" }`,
+		want: "123",
+	},
+	{
+		json: `{ "issuerConnector": "http://host/a/123" }`,
+		want: "123",
+	},
+	{
+		json: `{ "issuerConnector": "http://host/a/123/" }`,
+		want: "123",
+	},
+	{
+		json: clientJSONPayload("my.fat.jwt"),
+		want: "59a68243-dd96-4c8d-88a9-0f0e03e13b1b",
+	},
+}
+
+func TestReadIssuerConnectorID(t *testing.T) {
+	for k, d := range readIssuerConnectorIDFixtures {
+		assertReadIssuerConnectorID(t, d.json, k, d.want)
 	}
 }
