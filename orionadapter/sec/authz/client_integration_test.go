@@ -7,9 +7,9 @@ import (
 )
 
 // TODO: Get rid of dependency on Gernot's cluster in the future!!
-const serverURL = "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/"
+const pdpBaseURL = "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains"
 
-var client, _ = NewClient(serverURL)
+var client, _ = NewClient(pdpBaseURL)
 
 func TestPermit(t *testing.T) {
 	req := &xacml.Request{

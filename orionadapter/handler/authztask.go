@@ -16,14 +16,14 @@ import (
 type authZCallData struct {
 	consumerHeader string
 	authzToken     string
-	serverURL      string
+	pdpBaseURL     string
 	request        *xacml.Request
 	cacheMaxSecs   uint64
 }
 
 func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
 	consumerClaims, userClaims jwt.Payload) (*authZCallData, error) {
-	serverURL, request, err :=
+	pdpBaseURL, request, err :=
 		buildAuthZRequest(params, instance, consumerClaims, userClaims)
 	cacheMaxSecs, err := getAuthZCacheDecisionMaxSeconds(params, err)
 	if err != nil {
@@ -33,14 +33,14 @@ func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
 	return &authZCallData{
 		consumerHeader: instance.IdsConsumerHeader,
 		authzToken:     instance.IdsAuthzToken,
-		serverURL:      serverURL,
+		pdpBaseURL:     pdpBaseURL,
 		request:        request,
 		cacheMaxSecs:   cacheMaxSecs,
 	}, nil
 }
 
 func (d *authZCallData) authZize() (authorized bool, e error) {
-	client, err := authz.NewClient(d.serverURL)
+	client, err := authz.NewClient(d.pdpBaseURL)
 	if err != nil {
 		return false, err
 	}
@@ -105,7 +105,7 @@ func doAuthorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params
 
 func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
 	consumerClaims, userClaims jwt.Payload) (string, *xacml.Request, error) {
-	url, err := getAuthZServerURL(p, nil)
+	url, err := getAuthZPdpBaseURL(p, nil)
 
 	return url, &xacml.Request{
 		Daps: xacml.Daps{

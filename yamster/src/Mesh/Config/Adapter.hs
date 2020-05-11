@@ -83,7 +83,7 @@ instance AdapterSpec OrionAdapterSpec where
       "server_certificate" =: dapsServerCertificate pki
     "authz" =: do
       "enabled" =: False
-      "server_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/"
+      "pdp_base_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains"
       "hs256_shared_secret" =: "d3eafd0101866b21"
       "cache_decision_max_seconds" =: Z 3600
 

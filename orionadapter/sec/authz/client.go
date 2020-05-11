@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 
 	"github.com/orchestracities/boost/orionadapter/sec/authz/xacml"
@@ -19,8 +20,15 @@ type Client struct {
 
 // NewClient instantiates an AuthZ client to connect to the server endpoint
 // specified by the URL param.
-func NewClient(serverURL string) (*Client, error) {
-	endpoint, err := parseBaseURL(serverURL)
+// The pdpBaseURL is the base URL of your policy decision point, e.g.
+// * http://your.authz/authzforce-ce/domain
+// * https://your.authz:44300/authzforce-ce/domain
+// we'll append the domain ID from the user token and a 'pdp' so
+// the resulting URL will be e.g.
+// * http://your.authz/authzforce-ce/domain/nrEEeq7c9rA/pdp
+// * https://your.authz:44300/authzforce-ce/domain/nrEEeq7c9rA/pdp
+func NewClient(pdpBaseURL string) (*Client, error) {
+	endpoint, err := parseBaseURL(pdpBaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -65,12 +73,12 @@ func parseBaseURL(rawURL string) (*url.URL, error) {
 
 func buildRequestURL(base *url.URL, appDomainID string) string {
 	escapedID := url.PathEscape(appDomainID)
-	return fmt.Sprintf("%s://%s/authzforce-ce/domains/%s/pdp",
-		base.Scheme, base.Host, escapedID)
+	fullPath := path.Join("/", base.Path, escapedID, "pdp")
+	return fmt.Sprintf("%s://%s%s", base.Scheme, base.Host, fullPath)
 }
 
 // errors boilerplate
 
 func invalidServerURL(rawURL string) error {
-	return fmt.Errorf("invalid AuthZ server base URL: %s", rawURL)
+	return fmt.Errorf("invalid AuthZ PDP base URL: %s", rawURL)
 }

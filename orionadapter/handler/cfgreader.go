@@ -132,11 +132,11 @@ func isAuthZEnabled(p *config.Params) bool {
 	return getAuthZ(p).Enabled
 }
 
-func getAuthZServerURL(p *config.Params, e error) (string, error) {
+func getAuthZPdpBaseURL(p *config.Params, e error) (string, error) {
 	if e != nil {
 		return "", e
 	}
-	return ensureString("AuthZ.ServerURL", getAuthZ(p).ServerUrl)
+	return ensureString("AuthZ.PdpBaseURL", getAuthZ(p).PdpBaseUrl)
 }
 
 func getAuthZHs256SharedSecret(p *config.Params, e error) (string, error) {

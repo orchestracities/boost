@@ -34,8 +34,14 @@ message AuthZ {
     // should the adapter use AuthZ?
     bool enabled = 1;
     // AuthZ authorisation endpoint.
-    // e.g. 'http://your.authz', 'https://your.authz:44300'
-    string server_url = 2;
+    // Put here the base URL of your policy decision point, e.g.
+    // * http://your.authz/authzforce-ce/domain
+    // * https://your.authz:44300/authzforce-ce/domain
+    // we'll append the domain ID from the user token and a 'pdp' so
+    // the resulting URL will be e.g.
+    // * http://your.authz/authzforce-ce/domain/nrEEeq7c9rA/pdp
+    // * https://your.authz:44300/authzforce-ce/domain/nrEEeq7c9rA/pdp
+    string pdp_base_url = 2;
     // HS256 shared secret to validate IDS authorization tokens.
     // TODO: rather store somewhere else, see
     // - https://github.com/orchestracities/boost/issues/15
