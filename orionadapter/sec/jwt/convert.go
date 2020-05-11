@@ -22,6 +22,15 @@ func toMap(x interface{}) map[string]interface{} {
 	}
 }
 
+func toMapOfString(x interface{}) map[string]string {
+	m := toMap(x)
+	ms := make(map[string]string)
+	for k, v := range m {
+		ms[k] = stringify(v)
+	}
+	return ms
+}
+
 func toListOfMap(x interface{}) []map[string]interface{} {
 	switch x.(type) {
 	case []interface{}:

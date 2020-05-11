@@ -1,5 +1,9 @@
 package xacml
 
+import (
+	"fmt"
+)
+
 // Specialized constructors for IDS XACML request.
 // see builder for generic constructors.
 
@@ -13,15 +17,11 @@ func fwKeyRockRole(roles []string) xNode {
 	return attr(id).children(listOfStringAttr(roles)...)
 }
 
-func idsSecurityProfileAuditLogging(auditLogging string) xNode {
-	id := "urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_audit_logging"
-	return attr(id).children(stringAttr(auditLogging))
-}
-
-func idsSecurityProfilePseudoSecondElement() xNode {
-	id := "urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_pseudo_second_element"
-	return attr(id).children(
-		stringAttr("ids_security_profile_pseudo_second_element"))
+func idsSecurityProfileEntry(key, value string) xNode {
+	id := fmt.Sprintf(
+		"urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_%s",
+		key)
+	return attr(id).children(stringAttr(value))
 }
 
 func idsMembership(membership bool) xNode {

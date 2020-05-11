@@ -109,11 +109,11 @@ func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
 
 	return url, &xacml.Request{
 		Daps: xacml.Daps{
-			ConnectorID:            consumerClaims.SubjectCommonName(),
-			Issuer:                 consumerClaims.Issuer(),
-			Membership:             consumerClaims.Membership(),
-			Scopes:                 consumerClaims.Scopes(),
-			SecProfileAuditLogging: consumerClaims.SecProfileAuditLogging(),
+			ConnectorID: consumerClaims.SubjectCommonName(),
+			Issuer:      consumerClaims.Issuer(),
+			Membership:  consumerClaims.Membership(),
+			Scopes:      consumerClaims.Scopes(),
+			SecProfile:  consumerClaims.SecProfile(),
 		},
 		KeyRock: xacml.KeyRock{
 			AppID:        userClaims.AppID(),

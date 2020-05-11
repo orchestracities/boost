@@ -17,11 +17,11 @@ type Request struct {
 // Daps holds the DAPS-specific data to do an access control check with the
 // AuthZ server.
 type Daps struct {
-	ConnectorID            string
-	Issuer                 string
-	Membership             string
-	Scopes                 []string
-	SecProfileAuditLogging string
+	ConnectorID string
+	Issuer      string
+	Membership  string
+	Scopes      []string
+	SecProfile  map[string]string
 }
 
 // KeyRock holds the KeyRock-specific data to do an access control check
@@ -41,11 +41,12 @@ func (r *Request) ToXML() string {
 func (r *Request) buildRequestAst() xNode {
 	ast := request().children(
 		accessSubject().children(
-			maybeA(fwKeyRockRole, r.KeyRock.Roles),
-			maybe(idsSecurityProfileAuditLogging, r.Daps.SecProfileAuditLogging),
-			idsSecurityProfilePseudoSecondElement(),
+			maybeSlice(fwKeyRockRole, r.KeyRock.Roles),
+		).children(
+			maybeMap(idsSecurityProfileEntry, r.Daps.SecProfile)...,
+		).children(
 			maybeBool(idsMembership, r.Daps.Membership),
-			maybeA(idsScopes, r.Daps.Scopes),
+			maybeSlice(idsScopes, r.Daps.Scopes),
 			maybe(idsDapsIss, r.Daps.Issuer),
 			maybe(idsDapsSubConnectorCN, r.Daps.ConnectorID),
 		),
@@ -93,10 +94,21 @@ func maybeBool(f func(bool) xNode, v string) xNode {
 	return emptyNode()
 }
 
-func maybeA(f func([]string) xNode, vs []string) xNode {
+func maybeSlice(f func([]string) xNode, vs []string) xNode {
 	xs := filterContent(vs)
 	if len(xs) > 0 {
 		return f(xs)
 	}
 	return emptyNode()
+}
+
+func maybeMap(f func(string, string) xNode, m map[string]string) []xNode {
+	ns := make([]xNode, 0, len(m))
+	for k, v := range m {
+		if hasContent(k) && hasContent(v) {
+			n := f(k, v)
+			ns = append(ns, n)
+		}
+	}
+	return ns
 }

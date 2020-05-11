@@ -164,12 +164,17 @@ func (p Payload) idsAttributes() map[string]interface{} {
 	return toMap(p["ids_attributes"])
 }
 
+// SecProfile extracts the IDS security profile block of a DAPS JWT as a map.
+// If the block isn't there, return an empty map.
+func (p Payload) SecProfile() map[string]string {
+	attrs := p.idsAttributes()
+	return toMapOfString(attrs["security_profile"])
+}
+
 // SecProfileAuditLogging reads the value of the IDS audit logging field
 // as a string from a DAPS JWT. If the field isn't there, return empty.
 func (p Payload) SecProfileAuditLogging() string {
-	attrs := p.idsAttributes()
-	secProfile := toMap(attrs["security_profile"])
-	return stringify(secProfile["audit_logging"])
+	return p.SecProfile()["audit_logging"]
 }
 
 // Membership reads the value of the IDS membership field as a string from

@@ -92,11 +92,7 @@ var requestWithMissingIssuerAndService = `<?xml version="1.0" encoding="UTF-8"?>
 
 var minimalRequest = `<?xml version="1.0" encoding="UTF-8"?>
 <Request xmlns="urn:oasis:names:tc:xacml:3.0:core:schema:wd-17" CombinedDecision="false" ReturnPolicyIdList="false">
-  <Attributes Category="urn:oasis:names:tc:xacml:1.0:subject-category:access-subject">
-    <Attribute AttributeId="urn:oasis:names:tc:xacml:2.0:subject:ids_security_profile_pseudo_second_element" IncludeInResult="false">
-      <AttributeValue DataType="http://www.w3.org/2001/XMLSchema#string">ids_security_profile_pseudo_second_element</AttributeValue>
-    </Attribute>
-  </Attributes>
+  <Attributes Category="urn:oasis:names:tc:xacml:1.0:subject-category:access-subject"/>
   <Attributes Category="urn:oasis:names:tc:xacml:3.0:attribute-category:resource"/>
   <Attributes Category="urn:oasis:names:tc:xacml:3.0:attribute-category:action"/>
   <Attributes Category="urn:oasis:names:tc:xacml:3.0:attribute-category:environment"/>

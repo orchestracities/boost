@@ -35,6 +35,41 @@ func TestToMap(t *testing.T) {
 	}
 }
 
+var toMapOfStringFixtures = []struct {
+	input interface{}
+	want  map[string]string
+}{
+	{
+		input: nil,
+		want:  map[string]string{},
+	},
+	{
+		input: map[string]interface{}{},
+		want:  map[string]string{},
+	},
+	{
+		input: map[string]interface{}{"x": 1},
+		want:  map[string]string{"x": "1"},
+	},
+	{
+		input: map[string]interface{}{"x": 1, "t": "hi!"},
+		want:  map[string]string{"x": "1", "t": "hi!"},
+	},
+	{
+		input: map[string]interface{}{"x": 1, "w": []string{"a", "b"}},
+		want:  map[string]string{"x": "1", "w": "[a b]"},
+	},
+}
+
+func TestToMapOfString(t *testing.T) {
+	for k, d := range toMapOfStringFixtures {
+		got := toMapOfString(d.input)
+		if !reflect.DeepEqual(d.want, got) {
+			t.Errorf("[%v] want: %v; got: %v", k, d.want, got)
+		}
+	}
+}
+
 var junkToListOfMapFixtures = []interface{}{
 	nil, -123, false, []string{"a", "b"}, struct{ x int }{x: 3},
 	map[string]interface{}{"x": 1},
