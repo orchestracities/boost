@@ -21,7 +21,7 @@ func validateConsumer(r *od.HandleOrionadapterRequest, params *config.Params) (
 	}
 
 	claims, vErr := validateToken(pubKeyPemRep, r.Instance.IdsConsumerHeader)
-	validateIssuer(r.Instance.IdsConsumerHeader, claims, vErr)
+	vErr = validateIssuer(r.Instance.IdsConsumerHeader, claims, vErr)
 	if vErr != nil {
 		ilog.Infof("consumer JWT validation failed: %v", vErr)
 		return nil, invalidJWTError()
