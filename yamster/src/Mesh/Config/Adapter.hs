@@ -7,6 +7,7 @@ module Mesh.Config.Adapter
 where
 
 import Prelude.Unicode
+import Data.Char (toLower)
 import Data.String.Interpolate (i)
 import Peml
 
@@ -96,7 +97,8 @@ instance AdapterSpec OrionAdapterSpec where
     "ids_consumer_header" =: header idsSecHeaderName
     "ids_authz_token" =: header idsAuthzTokenHeaderName
     where
-      header name = "request.headers[\"" ++ name ++ "\"] | \"\""
+      header name = "request.headers[\"" ++ (map toLower name) ++ "\"] | \"\""
+      -- Mixer won't recognise the header if it isn't lowercase.
 
   handlerResponseName = const "adapter_response"
 

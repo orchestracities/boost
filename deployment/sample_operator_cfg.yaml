@@ -35,7 +35,7 @@ metadata:
 spec:
   params:
     fiware_service: "request.headers[\"fiware-service\"] | \"\""
-    ids_authz_token: "request.headers[\"X-AUTH-TOKEN\"] | \"\""
+    ids_authz_token: "request.headers[\"x-auth-token\"] | \"\""
     ids_consumer_header: "request.headers[\"header\"] | \"\""
     request_method: request.method
     request_path: request.path
