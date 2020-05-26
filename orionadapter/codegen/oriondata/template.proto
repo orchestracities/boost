@@ -9,14 +9,16 @@ option (istio.mixer.adapter.model.v1beta1.template_variety) = TEMPLATE_VARIETY_C
 
 // Input template
 message Template {
-    // The IDS-DTH token, i.e. the content of the IDS-DTH HTTP request header.
-    string client_token = 1;
+    // The content of the IDS HTTP request header from the issuer connector.
+    string ids_consumer_header = 1;
+    // The content of the 'X-AUTH-TOKEN' HTTP request header.
+    string ids_authz_token = 2;
     // The HTTP request method, e.g. GET.
-    string request_method = 2;
+    string request_method = 3;
     // The HTTP request path, e.g. /v2/entities?id=1
-    string request_path = 3;
+    string request_path = 4;
     // The Fiware Service header.
-    string fiware_service = 4;
+    string fiware_service = 5;
 }
 
 // Output template

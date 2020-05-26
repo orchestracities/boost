@@ -9,9 +9,10 @@ spec:
     address: "orionadapterservice:43210"
   params:
     authz:
+      cache_decision_max_seconds: 3600
       enabled: false
-      resource_id: "b3a4a7d2-ce61-471f-b05d-fb82452ae686"
-      server_url: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains/CYYY_V2IEeqMJKbegCuurA/pdp"
+      hs256_shared_secret: d3eafd0101866b21
+      pdp_base_url: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains"
     daps:
       connector_audience: "https://consumerconnector.fiware.org"
       connector_certificate: "-----BEGIN CERTIFICATE-----\nMIIDhjCCAm4CCQCjAJ8YHrjCoTANBgkqhkiG9w0BAQsFADCBhDELMAkGA1UEBhMC\nWkExFTATBgNVBAgMDFdlc3Rlcm4gQ2FwZTESMBAGA1UEBwwJQ2FwZSBUb3duMRIw\nEAYDVQQKDAlSdXNrcyBMdGQxCzAJBgNVBAsMAk1hMSkwJwYDVQQDDCBvcmlvbmFk\nYXB0ZXJzZXJ2aWNlLmlzdGlvLXN5c3RlbTAeFw0yMDAxMTkxNjU3NDBaFw0zMDAx\nMTYxNjU3NDBaMIGEMQswCQYDVQQGEwJaQTEVMBMGA1UECAwMV2VzdGVybiBDYXBl\nMRIwEAYDVQQHDAlDYXBlIFRvd24xEjAQBgNVBAoMCVJ1c2tzIEx0ZDELMAkGA1UE\nCwwCTWExKTAnBgNVBAMMIG9yaW9uYWRhcHRlcnNlcnZpY2UuaXN0aW8tc3lzdGVt\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAl8saBGDth0LkrGrpYx3U\np7u933TN4mjCZtofQfhKy5D1T6QWhkhPTTX0xyLwwNCd+ckzj6oImubI9glL4/7v\n+lqvXQDDyIwc8rSzQTDSsoLG1hJkJztYR08AQoercNuclvyc67c8mqYSsVO+VTCh\nudTkena8H4VdT+LcaufbwUGCd7R89uUjtco7mK66mxKbxh/wd9FNfWG8ky7QoSnR\nrAbGJCcNng1z1htaFE8IQtE3vn85uhPJBsvaQmUFX8AIxAVTblF74dnjlYH6hFnP\nfU+edH3lwiBRCM5Ur7Tqhorm1NcUkrFKzGrA6CxlEKZJ7RgPZC9PCabBKjzvZRLQ\nhQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAiQkBJ46qfeRJx4Fpq87+cgSORjts2\nAxonWW4anz8zhvH73Re5//1WlY5bXDB4Rpejm0LPZ/XzVI9kbULg4JYJd0p8eTr8\noiab1XNI9M6WHBAzF/dWse3IXErlBQAESmX051AGEtLg74jZTC4oNCcfsBy4oYPL\n5QxIoDwBvmi+ntrXLRm/16Mb/UCQ7XXwP1lugvt9x96hHCTXK/83QK86ooZmchIi\ncrXpKrVFy/oDLt9YIfT6KEtWmmquAIaA6UDc3UI7kqR2mmsYn/d3zy79CPT7NnpK\nTHZ0oKtoMSSZS23DyuP3Q0K6JHXMfPBWKPaKSHLUMVaORvGZLmQ9cEvf\n-----END CERTIFICATE-----\n"
@@ -33,8 +34,9 @@ metadata:
   namespace: "istio-system"
 spec:
   params:
-    client_token: "request.headers[\"header\"] | \"\""
     fiware_service: "request.headers[\"fiware-service\"] | \"\""
+    ids_authz_token: "request.headers[\"x-auth-token\"] | \"\""
+    ids_consumer_header: "request.headers[\"header\"] | \"\""
     request_method: request.method
     request_path: request.path
   template: oriondata

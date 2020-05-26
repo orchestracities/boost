@@ -7,6 +7,7 @@ module Mesh.Config.Adapter
 where
 
 import Prelude.Unicode
+import Data.Char (toLower)
 import Data.String.Interpolate (i)
 import Peml
 
@@ -20,6 +21,9 @@ import Mesh.Util.K8s (ServiceSpec(..), Port(..), chooseServiceName, serviceFqn)
 
 idsSecHeaderName ∷ String
 idsSecHeaderName = "header"
+
+idsAuthzTokenHeaderName ∷ String
+idsAuthzTokenHeaderName = "X-AUTH-TOKEN"
 
 fiwareServiceHeaderName ∷ String
 fiwareServiceHeaderName = "fiware-service"
@@ -80,8 +84,9 @@ instance AdapterSpec OrionAdapterSpec where
       "server_certificate" =: dapsServerCertificate pki
     "authz" =: do
       "enabled" =: False
-      "server_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains/CYYY_V2IEeqMJKbegCuurA/pdp"
-      "resource_id" =: "b3a4a7d2-ce61-471f-b05d-fb82452ae686"
+      "pdp_base_url" =: "http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains"
+      "hs256_shared_secret" =: "d3eafd0101866b21"
+      "cache_decision_max_seconds" =: Z 3600
 
   templateName = const "oriondata"
 
@@ -89,9 +94,11 @@ instance AdapterSpec OrionAdapterSpec where
     "request_method" =: "request.method"
     "request_path" =: "request.path"
     "fiware_service" =: header fiwareServiceHeaderName
-    "client_token" =: header idsSecHeaderName
+    "ids_consumer_header" =: header idsSecHeaderName
+    "ids_authz_token" =: header idsAuthzTokenHeaderName
     where
-      header name = "request.headers[\"" ++ name ++ "\"] | \"\""
+      header name = "request.headers[\"" ++ (map toLower name) ++ "\"] | \"\""
+      -- Mixer won't recognise the header if it isn't lowercase.
 
   handlerResponseName = const "adapter_response"
 

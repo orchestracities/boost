@@ -34,9 +34,23 @@ message AuthZ {
     // should the adapter use AuthZ?
     bool enabled = 1;
     // AuthZ authorisation endpoint.
-    string server_url = 2;
-    // TODO: should this be the same as Daps.connector_id?
-    string resource_id = 3;
+    // Put here the base URL of your policy decision point, e.g.
+    // * http://your.authz/authzforce-ce/domain
+    // * https://your.authz:44300/authzforce-ce/domain
+    // we'll append the domain ID from the user token and a 'pdp' so
+    // the resulting URL will be e.g.
+    // * http://your.authz/authzforce-ce/domain/nrEEeq7c9rA/pdp
+    // * https://your.authz:44300/authzforce-ce/domain/nrEEeq7c9rA/pdp
+    string pdp_base_url = 2;
+    // HS256 shared secret to validate IDS authorization tokens.
+    // TODO: rather store somewhere else, see
+    // - https://github.com/orchestracities/boost/issues/15
+    string hs256_shared_secret = 3;
+    // Max cache age, in seconds, for AuthZ decisions.
+    // If not present or set to a non-positive value, don't cache decisions.
+    // If a positive value `v`, cache an AuthZ decision for `s` seconds where
+    // `s = min { ttl(consumerJWT), ttl(userJWT), v }`
+    uint64 cache_decision_max_seconds = 4;
 }
 
 // config for orionadapter

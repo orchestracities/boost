@@ -159,17 +159,20 @@ func TestStoreAndRetrieveAuthZDecision(t *testing.T) {
 	ensureInit(t)
 
 	header := clientJSONPayload(expIn2050JWT)
+	authzToken := expIn2050JWT
 	params := callParams([]string{"r1"}, "/v2", "svc", "GET")
 	authorized := true
+	cacheMax := uint64(3600)
 
-	if ok := PutAuthZDecision(header, params, authorized); !ok {
+	if ok := PutAuthZDecision(
+		header, authzToken, params, authorized, cacheMax); !ok {
 		t.Error("failed to put authz decision")
 	}
 
 	// wait for values to pass through buffers
 	time.Sleep(10 * time.Millisecond)
 
-	got, found := LookupAuthZDecision(header, params)
+	got, found := LookupAuthZDecision(header, authzToken, params)
 	if !found {
 		t.Errorf("authz decision not found, got: %v", got)
 	}
@@ -178,64 +181,86 @@ func TestStoreAndRetrieveAuthZDecision(t *testing.T) {
 	}
 }
 
-func TestDropAuthZDecisionWhenClientTokenExpired(t *testing.T) {
+func assertDropAuthZDecision(t *testing.T,
+	consumerHeader, userJWT string, maxCache uint64, reasonToDrop string) {
 	ensureInit(t)
 
-	header := clientJSONPayload(expiredJWT)
 	params := callParams([]string{"r1"}, "/v2", "svc", "GET")
 	authorized := true
 
-	if ok := PutAuthZDecision(header, params, authorized); ok {
-		t.Error("should refuse to put authz decision if JWT has expired")
+	if ok := PutAuthZDecision(
+		consumerHeader, userJWT, params, authorized, maxCache); ok {
+		t.Error(reasonToDrop)
 	}
 
-	got, found := LookupAuthZDecision(header, params)
+	got, found := LookupAuthZDecision(consumerHeader, userJWT, params)
 	if found {
 		t.Errorf("authz decision found: %v", got)
 	}
 }
 
-func TestDropAuthZDecisionWhenClientTokenWithNoExp(t *testing.T) {
-	ensureInit(t)
+func TestDropAuthZDecisionWhenConsumerTokenExpired(t *testing.T) {
+	consumerHeader := clientJSONPayload(expiredJWT)
+	authzToken := expIn2050JWT
+	maxCache := uint64(3600)
+	reason := "should refuse to put authz decision if consumer JWT has expired"
 
-	header := clientJSONPayload(emptyJWT)
-	params := callParams([]string{"r1"}, "/v2", "svc", "GET")
-	authorized := true
-
-	if ok := PutAuthZDecision(header, params, authorized); ok {
-		t.Error("should refuse to put authz decision if JWT has no exp")
-	}
-
-	got, found := LookupAuthZDecision(header, params)
-	if found {
-		t.Errorf("authz decision found: %v", got)
-	}
+	assertDropAuthZDecision(t, consumerHeader, authzToken, maxCache, reason)
 }
 
-func TestDropAuthZDecisionWhenInvalidClientToken(t *testing.T) {
-	ensureInit(t)
+func TestDropAuthZDecisionWhenUserTokenExpired(t *testing.T) {
+	consumerHeader := clientJSONPayload(expIn2050JWT)
+	authzToken := expiredJWT
+	maxCache := uint64(3600)
+	reason := "should refuse to put authz decision if user JWT has expired"
 
-	header := "this is so wrong"
-	params := callParams([]string{"r1"}, "/v2", "svc", "GET")
-	authorized := true
+	assertDropAuthZDecision(t, consumerHeader, authzToken, maxCache, reason)
+}
 
-	if ok := PutAuthZDecision(header, params, authorized); ok {
-		t.Error("should refuse to put authz decision with invalid JWT")
-	}
+func TestDropAuthZDecisionWhenConsumerTokenWithNoExp(t *testing.T) {
+	consumerHeader := clientJSONPayload(emptyJWT)
+	authzToken := expIn2050JWT
+	maxCache := uint64(3600)
+	reason := "should refuse to put authz decision if consumer JWT has no exp"
 
-	got, found := LookupAuthZDecision(header, params)
-	if found {
-		t.Errorf("authz decision found: %v", got)
-	}
+	assertDropAuthZDecision(t, consumerHeader, authzToken, maxCache, reason)
+}
+
+func TestDropAuthZDecisionWhenUserTokenWithNoExp(t *testing.T) {
+	consumerHeader := clientJSONPayload(expIn2050JWT)
+	authzToken := emptyJWT
+	maxCache := uint64(3600)
+	reason := "should refuse to put authz decision if user JWT has no exp"
+
+	assertDropAuthZDecision(t, consumerHeader, authzToken, maxCache, reason)
+}
+
+func TestDropAuthZDecisionWhenInvalidConsumerToken(t *testing.T) {
+	consumerHeader := "this is so wrong"
+	authzToken := expIn2050JWT
+	maxCache := uint64(3600)
+	reason := "should refuse to put authz decision with invalid consumer JWT"
+
+	assertDropAuthZDecision(t, consumerHeader, authzToken, maxCache, reason)
+}
+
+func TestDropAuthZDecisionWhenNoMaxCacheParam(t *testing.T) {
+	consumerHeader := "this is so wrong"
+	authzToken := expIn2050JWT
+	maxCache := uint64(0)
+	reason := "should refuse to put authz decision if max cache = 0"
+
+	assertDropAuthZDecision(t, consumerHeader, authzToken, maxCache, reason)
 }
 
 func TestNoCachedAuthZDecision(t *testing.T) {
 	ensureInit(t)
 
 	header := clientJSONPayload(expIn2050JWT)
+	authzToken := expIn2050JWT
 	params := callParams([]string{"r1"}, "/v2", "svc", "GET")
 
-	got, found := LookupAuthZDecision(header, params)
+	got, found := LookupAuthZDecision(header, authzToken, params)
 	if found {
 		t.Errorf("authz decision found: %v", got)
 	}

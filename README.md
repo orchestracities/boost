@@ -52,30 +52,57 @@ Next up is our own test DAPS service. Open up a new term and:
 
     $ sh scripts/run-mockdaps.sh
 
-Finally you're ready to use the Mixer client to send an IDSA header to the
+Finally you're ready to use the Mixer client to send an IDS header to the
 Mixer server. Open a new terminal and run:
 
-    $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
-    $ sh scripts/send-token.sh "${MY_FAT_JWT}"
+    $ export DAPS_JWT=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpZHNfYXR0cmlidXRlcyI6eyJzZWN1cml0eV9wcm9maWxlIjp7ImF1ZGl0X2xvZ2dpbmciOjIsInBzZXVkb19zZWNvbmRfZWxlbWVudCI6Imlkc19zZWN1cml0eV9wcm9maWxlX3BzZXVkb19zZWNvbmRfZWxlbWVudCJ9LCJtZW1iZXJzaGlwIjp0cnVlLCJpZHMtdXJpIjoiaHR0cDovL3NvbWUtdXJpIiwidHJhbnNwb3J0X2NlcnRzX3NoYTI1OCI6ImJhY2I4Nzk1NzU3MzBiYjA4M2YyODNmZDViNjdhOGNiODk2OTQ0ZDFiZTI4YzdiMzIxMTdjZmM3NTdjODFlOTYifSwic2NvcGVzIjpbImlkc19jb25uZWN0b3IiLCJpZHNfc2NvcGVfcHNldWRvX3NlY29uZF9lbGVtZW50Il0sImF1ZCI6IklEU19Db25uZWN0b3IiLCJpc3MiOiJodHRwczovL2RhcHMuYWlzZWMuZnJhdW5ob2Zlci5kZSIsInN1YiI6IkM9REUsTz1GSVdBUkUsT1U9Q1RPSURTQSxDTj00ZTE2ZjAwNy1kOTU5LTRlYjItYjQ3ZC03OGRkMGM0ZWFiMGUiLCJuYmYiOjE1ODgxNjMyODMsImV4cCI6MjU4ODE2Njg4M30.dOnaOtKU6P-UM9xx_xiEaNGQhm6UFdh-AVTmL9Op6_S0LukNOnstkZVLl6yxq077QS-t0lGFjj7ofRL-q6YS2yEfK8JsZ45pynQJz-uIUo85GuHadmtuP-ODHsxFO5-qyzIXcswM8c4aTaJfW6Mi_WZ7hp2yoJPEFhlPPBwHGhExTV_vLmdTEBcGpNdK90j-rcsZSq0K5MOLAVwbQunxoke8b8DZjtIdbOwqm5l7D0banGYfKRUd3r2aFwp2OhcrSb-XeP_kFB9sYZKSimKOJOREJphrTG92XVdFu5Hls3Bwtc7i8QLJwwn-HVHHxWMD2ghzBF0mmGLodvWQNik7ww
+    $ sh scripts/send-token.sh "${DAPS_JWT}"
 
 At this point you should be able to see a status of `OK` being returned.
-Hang on a minute! What's just happened? The script takes a JWT token as
-input, puts it in an IDSA template header and sends it to the Mixer which,
-in turn, passes the IDSA header on to the adapter. On getting the header
-value, the adapter verifies the token's RSA 256 signature using the public
-key in its config---see `_output_/testdata/sample_operator_cfg.yaml`.
-Then it goes on to requesting an ID token from our local DAPS test
-service---again have a look at `_output_/testdata/sample_operator_cfg.yaml`.
-In the DAPS terminal, you should be able to see the adapter hitting
-DAPS with a request for an ID token.
+Hang on a minute! What's just happened? The script takes a DAPS JWT as
+input, puts it in an IDS template header and sends it to the Mixer which,
+in turn, passes the IDS header on to the adapter. On getting the header
+value, the adapter validates it and, if everything is hunky-dory, goes
+on to requesting an ID token from our local DAPS test service. In the
+DAPS terminal, you should be able to see the adapter hitting DAPS with
+a request for an ID token.
 
-If you call the script with an invalid token:
+What's a good header? One that winds up bursting the back of the net?
+Yea, that too, but in our case it should
+
+* be well-formed—i.e. a Base64-encoded JSON object;
+* contain a valid DAPS JWT—`securityToken.tokenValue` field;
+* have a consistent DAPS issuer—the connector ID in the `issuerConnector`
+  field should be the same as the subject's common name in the DAPS
+  token.
+
+And when is a DAPS JWT valid? When
+
+* the token is well-formed, according the JWT spec;
+* it got signed using the private key paired to the RSA 256 public key
+  in the adapter's config—see `_output_/testdata/sample_operator_cfg.yaml`;
+* the current time falls within the token's `nbf` ("not before" claim)
+  and `exp` ("expiry time") bounds—if `nbf` (`exp`) isn't there, set
+  the lower (upper) bound to the beginning (end) of time.
+
+So if you call the script with an invalid token:
 
     $ sh scripts/send-token.sh this.should.fail
 
-you should get a fat permission denied back.
+you should get a fat permission denied back. Here's another failure
+example where we have a valid JWT but the issuer is different than
+that in the header
 
-At the moment, as a stopgap solution to [#24](https://github.com/orchestracities/boost/issues/24),
+    $ export DAPS_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
+    $ sh scripts/send-token.sh "${DAPS_JWT}"
+
+Now it'd be a good time to decode those tokens we used (try [jwt.io](https://jwt.io/))
+to see what's inside and also have a look at the IDS template header
+in `send-token.sh` so you have all the pieces of the puzzle.
+
+Another thing the adapter can do for you is authorisation with AuthZ,
+we'll touch on that later on. Also worth mentioning that at the moment,
+as a stopgap solution to [#24](https://github.com/orchestracities/boost/issues/24),
 the adapter lets you get a DAPS ID token with a plain, old HTTP GET.
 Try this:
 
@@ -169,7 +196,7 @@ the way to DockerHub. This article explains how the trick works:
 Our adapter is supposed to process attributes of messages directed to
 Orion. For the sake of testing though, there's no need to deploy Orion
 & friends, any dummy HTTP service will do but a better option is `httpbin`
-which can echo back HTTP messages too---this will come in handy to e.g.
+which can echo back HTTP messages too—this will come in handy to e.g.
 check the adapter removes IDS token headers before the HTTP request gets
 passed down to the target service.
 
@@ -201,11 +228,12 @@ Should we have some fun with HTTP headers?
 The `header` header gets dropped from the HTTP request before it
 gets to the `httpbin` service (see `ingress_routing.yaml`) whereas
 any other header gets passed on. Uh? `header` header? Yep, you heard
-right, the IDSA header is aptly called `header` :-)
+right, the IDS header is aptly called `header` :-)
 
 **Note**. *Header removal*. We disabled this at the moment since it
-gets in the way of token validation---see #11.
-So, much to your disappointment, the above won't work---i.e. the IDSA
+gets in the way of token validation—see
+[#11](https://github.com/orchestracities/boost/issues/11).
+So, much to your disappointment, the above won't work—i.e. the IDS
 header won't get dropped.
 
 ##### Deploying the adapter
@@ -239,29 +267,28 @@ You should get back a fat 403 with a message along the lines of:
     orionadapter-handler.handler.istio-system:
     unauthorized: invalid consumer JWT data
 
-Like I said earlier, the adapter verifies the JWT you send as part of the IDSA-Header is valid---see
-`deployment/sample_operator_cfg.yaml`. What happens if we send a valid
-token then? Here's a valid JWT signed with the private key in the config
-(`idsa_private_key` field).
+Like I said earlier, the adapter verifies the JWT you send as part of the
+IDS header is valid. What happens if we send a valid token then? Here's a
+valid JWT signed with the private key in the adapter's config—i.e the
+`idsa_private_key` field in `deployment/sample_operator_cfg.yaml`.
 
-    $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.e30.QHOtHczHK_bJrgqhXeZdE4xnCGh9zZhp67MHfRzHlUUe98eCup_uAEKh-2A8lCyg8sr1Q9dV2tSbB8vPecWPaB43BWKU00I7cf1jRo9Yy0nypQb3LhFMiXIMhX6ETOyOtMQu1dS694ecdPxMF1yw4rgqTtp_Sz-JfrasMLcxpBtT7USocnJHE_EkcQKVXeJ857JtkCKAzO4rkMli2sFnKckvoJMBoyrObZ_VFCVR5NGnOvSnLMqKrYaLxNHLDL_0Mxy_b8iKTiRAqyNce4tg8Evhqb3rPQcx9kMdwyv_1ggEVKQyiPWa3MkSBvBArgPghbJMcSJVMhtUO8M9BmNMyw
+    $ export DAPS_JWT=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpZHNfYXR0cmlidXRlcyI6eyJzZWN1cml0eV9wcm9maWxlIjp7ImF1ZGl0X2xvZ2dpbmciOjIsInBzZXVkb19zZWNvbmRfZWxlbWVudCI6Imlkc19zZWN1cml0eV9wcm9maWxlX3BzZXVkb19zZWNvbmRfZWxlbWVudCJ9LCJtZW1iZXJzaGlwIjp0cnVlLCJpZHMtdXJpIjoiaHR0cDovL3NvbWUtdXJpIiwidHJhbnNwb3J0X2NlcnRzX3NoYTI1OCI6ImJhY2I4Nzk1NzU3MzBiYjA4M2YyODNmZDViNjdhOGNiODk2OTQ0ZDFiZTI4YzdiMzIxMTdjZmM3NTdjODFlOTYifSwic2NvcGVzIjpbImlkc19jb25uZWN0b3IiLCJpZHNfc2NvcGVfcHNldWRvX3NlY29uZF9lbGVtZW50Il0sImF1ZCI6IklEU19Db25uZWN0b3IiLCJpc3MiOiJodHRwczovL2RhcHMuYWlzZWMuZnJhdW5ob2Zlci5kZSIsInN1YiI6IkM9REUsTz1GSVdBUkUsT1U9Q1RPSURTQSxDTj00ZTE2ZjAwNy1kOTU5LTRlYjItYjQ3ZC03OGRkMGM0ZWFiMGUiLCJuYmYiOjE1ODgxNjMyODMsImV4cCI6MjU4ODE2Njg4M30.dOnaOtKU6P-UM9xx_xiEaNGQhm6UFdh-AVTmL9Op6_S0LukNOnstkZVLl6yxq077QS-t0lGFjj7ofRL-q6YS2yEfK8JsZ45pynQJz-uIUo85GuHadmtuP-ODHsxFO5-qyzIXcswM8c4aTaJfW6Mi_WZ7hp2yoJPEFhlPPBwHGhExTV_vLmdTEBcGpNdK90j-rcsZSq0K5MOLAVwbQunxoke8b8DZjtIdbOwqm5l7D0banGYfKRUd3r2aFwp2OhcrSb-XeP_kFB9sYZKSimKOJOREJphrTG92XVdFu5Hls3Bwtc7i8QLJwwn-HVHHxWMD2ghzBF0mmGLodvWQNik7ww
 
-Now we can use this convenience script to stick it into a fully-fledged base64-encoded IDSA header:
+Now we can use this convenience script to stick it into a fully-fledged
+base64-encoded IDS header:
 
-    $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${MY_FAT_JWT}")
+    $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${DAPS_JWT}")
 
 and send the header with
 
     $ curl -v "$BASE_URL"/headers \
         -H "header:${HEADER_VALUE}"
 
-The request should go through to the target `httpbin` service
-which should reply with the HTTP headers it gets to see.
-You should be able to
-spot a `header` among the response headers: this is where we plonk in
-the IDS server token we generate. (No seriously, no pun intended, the
-response header we output, just like the request header, is also called
-`header` :-)
+The request should go through to the target `httpbin` service which should
+reply with the HTTP headers it gets to see. You should be able to spot
+a `header` among the response headers: this is where we plonk in the IDS
+server token we generate. (No seriously, no pun intended, the response
+header we output, just like the request header, is also called `header` :-)
 What you see on your terminal should be similar to:
 
     HTTP/1.1 200 OK
@@ -283,11 +310,12 @@ What you see on your terminal should be similar to:
         }
     }
 
-Ideally, you shouldn't see the IDSA client header being echoed back
-by `httpbin` (`headers` JOSN object), yet there it is in all its glory.
+Ideally, you shouldn't see the IDS client header being echoed back by
+`httpbin` in the `headers` JSON object, yet there it is in all its glory.
 In fact, our routing was supposed to chop that head(-er) off before
 sending the request on to `httpbin` which ain't happening at the
-moment---see #11 about it.
+moment—see [#11](https://github.com/orchestracities/boost/issues/11)
+about it.
 
 What goes in the adapter's output `header` is a Base64-encoded JSON object
 that actually holds the identity token the adapter got back from DAPS.
@@ -366,7 +394,7 @@ The response should be similar to
 and if you decode the value of the JSON `Header` field from Base64,
 you should get a JSON object like the one we saw earlier, with a
 `tokenValue` of `whoopsie.dapsie.jwt` since the adapter got the
-DAPS identity token from our mock DAPS service---well, unless you
+DAPS identity token from our mock DAPS service—well, unless you
 reconfigured the mesh to have the adapter talk to a real DAPS, in
 which case `tokenValue` should be a real DAPS identity token ;-)
 
@@ -380,9 +408,9 @@ heck not. Start by deploying MongoDB:
     $ kubectl apply -f deployment/mongodb_service.yaml
 
 This is a simple MongoDB service with no replication and ephemeral
-storage---i.e. your DB won't survive a pod restart---but will do
+storage—i.e. your DB won't survive a pod restart—but will do
 for testing. You should wait until MongoDB is up and running before
-deploying Orion---in a prod scenario, you'd want to automate this
+deploying Orion—in a prod scenario, you'd want to automate this
 with e.g. `init` containers, but hey we're just testing here :-)
 Instead of waiting around just twiddling your thumbs, edit your
 load balancer config to add an external port for Orion:
@@ -462,68 +490,77 @@ hopefully smoke-free, tests.
 ##### Access-control with AuthZ
 
 Time to up the ante in the access-control war. We're going to require
-CIA clearance now before you can access HTTP resources---in case that
+CIA clearance now before you can access HTTP resources—in case that
 wasn't obvious to you too, CIA stands for Control of Internet Access,
 of course, what else?! We have an AuthZ test server at
 
-* http://authzforceingress.appstorecontainerns.46.17.108.63.xip.io/authzforce-ce/domains/CYYY_V2IEeqMJKbegCuurA/pdp
+    authzforceingress.appstorecontainerns.46.17.108.63.xip.io
 
-configured with an XACML policy that only lets users in roles `role0`
-through `role3` `GET` Orion resources through an application identified
-by a resource ID of `b3a4a7d2-ce61-471f-b05d-fb82452ae686`, i.e. our
-Mr Adapter the Constable. Also, the policy only gives the green light
-if the resource the user is trying to access belongs to the `service`
-tenant.
+with an XACML policy decision point (PDP) to eyeball credentials and
+give security clearance only when appropriate. The configured access
+policy gets evaluated on the following data Mr Adapter the Constable
+is supposed to snatch out of mesh-inbound HTTP requests and dutifully
+pass on to AuthZ
 
-With default config, the adapter won't ask AuthZ to authorize calls:
-if the incoming token is valid, the request gets forwarded to Orion.
-But you can change that in a flash. Edit `sample_operator_cfg.yaml`
+* DAPS connector ID, issuer, membership, scopes and security profile
+  as found in the DAPS JWT contained in the IDS header.
+* Application ID, AZF domain and roles from the KeyRock JWT in the
+  `X-AUTH-TOKEN` header.
+* FiWare service—content of `fiware-service` header.
+* Request verb and path.
+
+With default config, the adapter won't ask AuthZ to authorise calls:
+if the incoming DAPS token is valid, the request gets forwarded to
+Orion. But you can change that in a flash. Edit `sample_operator_cfg.yaml`
 to set the `authz/enable` flag to `true`, then
 
     $ kubectl apply -f deployment/sample_operator_cfg.yaml
 
-Now whenever a request comes in, after okaying the client token in the
-`header` header, the adapter will submit an authorization request to
-AuthZ with the below data:
+Now whenever a request comes in, after okaying the DAPS token in the
+`header` header, the adapter will also validate the KeyRock token,
+comb the request for all the bits and pieces listed earlier and then
+pass them on to AuthZ. Since you don't want to mess with the CIA, Mr
+Adapter the Constable will enforce whichever decision AuthZ makes.
+KeyRock token validation rules are the same as those for DAPS JWTs
+we know and love, except we verify signatures with an HS 256 shared
+secret stashed away in the adapter's config.
 
-* *Resource ID*. Taken from `authz` config section.
-* *Resource Path*. The incoming request path, e.g. `/v2/entities?id=1`.
-* *Action*. Request verb, e.g. `GET`.
-* *Tenant*. Content of the request's `Fiware-Service` header if any.
-* *Roles*. User roles extracted from the `scopes` claim, if any, in
-  the incoming JWT token payload.
-
-Let's see it in action. Try resubmitting the request we made earlier
+Keen on AuthZ action? Try resubmitting the request we made earlier
 to get Orion's API entry points
 
-    $ curl -v "$(minikube ip):31026/v2" -H "header:${HEADER_VALUE}"
+    $ source scripts/cluster-url.sh
+    $ curl -v "${ORION_BASE_URL}/v2" -H "header:${HEADER_VALUE}"
 
 and, surprise, surprise, the adapter should show you the door this
 time (the boy ain't got no manners!) with a `403` and a message like
 
     PERMISSION_DENIED:
     orionadapter-handler.handler.istio-system:unauthorized:
-    AuthZ denied authorization
+    invalid AuthZ JWT data
 
-Let's see if we can get through. Since AuthZ expects the user to be
-in `role0` through `role3` and the request to target the `service`
-tenant, we'll need to change our request so it holds that data too.
-So we're going to use a JWT with a `scopes` claim set to `[role0, role1,
-role2, role3]` and add a `Fiware-Service` header. Here's the JWT,
-signed with the private key in the adapter config---look for the
-`idsa_private_key` field in `sample_operator_cfg.yaml`.
+Let's see if we can get through. First off, we're going to need DAPS
+and KeyRock JWTs with enough claims to make AuthZ happy. Here's a
+fitting DAPS JWT, signed with the private key in the adapter config—look
+for the `idsa_private_key` field in `sample_operator_cfg.yaml`.
 
-    $ export MY_FAT_JWT=eyJhbGciOiJSUzI1NiJ9.eyJzY29wZXMiOlsicm9sZTAiLCJyb2xlMSIsInJvbGUyIiwicm9sZTMiXX0.JN66SWLPqNg7pqTFRcryo-3lX4V4BNKG5bZD3SDne4B3qV5kS-5NNW5wFkty870NFjuXP_nCxg3ayOCe8YZab3kRieaCeygVJwc2i1iUEHmYqKz6jx2EecfM2VbechaapDOFc9k01S5ea1t7fSHFsJsDWpVPpCJZBAv1ikPZrv88-7PLOacdGum--0-0gI6LGaXIFiTIAzbdeJ5V-ikIK7CgLJFaR3Ib5MwGRjrGTaPqQGE62SVpATphRhSJIfXm18ViF2fG7KTGPBYGY3rxAdy6l3klpKuxA0ATQRZJ39mpjrgbf-WVlvH_9nSFAn9BvLiSJohpSMmoJTX7ToWA0g
+    $ export DAPS_JWT=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpZHNfYXR0cmlidXRlcyI6eyJzZWN1cml0eV9wcm9maWxlIjp7ImF1ZGl0X2xvZ2dpbmciOjIsInBzZXVkb19zZWNvbmRfZWxlbWVudCI6Imlkc19zZWN1cml0eV9wcm9maWxlX3BzZXVkb19zZWNvbmRfZWxlbWVudCJ9LCJtZW1iZXJzaGlwIjp0cnVlLCJpZHMtdXJpIjoiaHR0cDovL3NvbWUtdXJpIiwidHJhbnNwb3J0X2NlcnRzX3NoYTI1OCI6ImJhY2I4Nzk1NzU3MzBiYjA4M2YyODNmZDViNjdhOGNiODk2OTQ0ZDFiZTI4YzdiMzIxMTdjZmM3NTdjODFlOTYifSwic2NvcGVzIjpbImlkc19jb25uZWN0b3IiLCJpZHNfc2NvcGVfcHNldWRvX3NlY29uZF9lbGVtZW50Il0sImF1ZCI6IklEU19Db25uZWN0b3IiLCJpc3MiOiJodHRwczovL2RhcHMuYWlzZWMuZnJhdW5ob2Zlci5kZSIsInN1YiI6IkM9REUsTz1GSVdBUkUsT1U9Q1RPSURTQSxDTj00ZTE2ZjAwNy1kOTU5LTRlYjItYjQ3ZC03OGRkMGM0ZWFiMGUiLCJuYmYiOjE1ODgxNjMyODMsImV4cCI6MjU4ODE2Njg4M30.dOnaOtKU6P-UM9xx_xiEaNGQhm6UFdh-AVTmL9Op6_S0LukNOnstkZVLl6yxq077QS-t0lGFjj7ofRL-q6YS2yEfK8JsZ45pynQJz-uIUo85GuHadmtuP-ODHsxFO5-qyzIXcswM8c4aTaJfW6Mi_WZ7hp2yoJPEFhlPPBwHGhExTV_vLmdTEBcGpNdK90j-rcsZSq0K5MOLAVwbQunxoke8b8DZjtIdbOwqm5l7D0banGYfKRUd3r2aFwp2OhcrSb-XeP_kFB9sYZKSimKOJOREJphrTG92XVdFu5Hls3Bwtc7i8QLJwwn-HVHHxWMD2ghzBF0mmGLodvWQNik7ww
 
 Just like we did earlier, we use the same convenience script to get
-the base64-encoded IDSA header
+the Base64-encoded IDS header
 
-    $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${MY_FAT_JWT}")
+    $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${DAPS_JWT}")
 
-and we're ready to try our luck
+Up next is the KeyRock JWT. Below is a good one, signed with the shared
+secret in the adapter config —look for `hs256_shared_secret` in
+`sample_operator_cfg.yaml`.
 
-    $ curl -v "$(minikube ip):31026/v2" \
+    $ export USER_JWT=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdhbml6YXRpb25zIjpbeyJpZCI6IjA5ZDQzOTVlLTkzMWMtNDc1Yy1hNzIzLWFmMzYyYjU2M2IxMSIsIm5hbWUiOiJPcmcyIiwiZGVzY3JpcHRpb24iOiJPcmcyIiwid2Vic2l0ZSI6bnVsbCwicm9sZXMiOlt7ImlkIjoiYTg1ZTg3ZjgtYjdlOC00NTdlLWFhYjEtZmJjM2E0ZTg4MTg1IiwibmFtZSI6InJvbGUzIn1dfSx7ImlkIjoiM2FlNmEzYTMtNTFmNS00MDI1LTk4YzMtOWNlYWViNTNjMGIyIiwibmFtZSI6Ik9yZzEiLCJkZXNjcmlwdGlvbiI6Ik9yZzEiLCJ3ZWJzaXRlIjpudWxsLCJyb2xlcyI6W3siaWQiOiI5MmMyZDM3Zi01ODBiLTQ3YmEtOTE3OC1kOWNhOGVjMTIzNzgiLCJuYW1lIjoicm9sZTQifSx7ImlkIjoiYTg1ZTg3ZjgtYjdlOC00NTdlLWFhYjEtZmJjM2E0ZTg4MTg1IiwibmFtZSI6InJvbGUzIn1dfV0sImRpc3BsYXlOYW1lIjoiIiwicm9sZXMiOlt7ImlkIjoiOTNjOWU1MDMtMDVlNi00ZmFmLTllNTQtNDUzMWMwOTQ4YzYyIiwibmFtZSI6InJvbGUxIn0seyJpZCI6IjkyYzJkMzdmLTU4MGItNDdiYS05MTc4LWQ5Y2E4ZWMxMjM3OCIsIm5hbWUiOiJyb2xlMyJ9XSwiYXBwX2lkIjoiN2JjMmI3MzUtN2ZkZC00MGVhLThjYjItYWNhZTliMjQxY2E3IiwidHJ1c3RlZF9hcHBzIjpbXSwiaXNHcmF2YXRhckVuYWJsZWQiOmZhbHNlLCJpbWFnZSI6IiIsImVtYWlsIjoiYWxpY2UtdGhlLWFkbWluQHRlc3QuY29tIiwiaWQiOiJhZG1pbiIsImF1dGhvcml6YXRpb25fZGVjaXNpb24iOiIiLCJhcHBfYXpmX2RvbWFpbiI6IndDSXdjWUZrRWVxQk5WWWJtN2M5ckEiLCJlaWRhc19wcm9maWxlIjp7fSwiYXR0cmlidXRlcyI6e30sInVzZXJuYW1lIjoiYWxpY2UiLCJ0eXBlIjoidXNlciIsImlhdCI6MTU4NzIwNjYzNiwiZXhwIjoyNTg3MjEwMjM2fQ.hbOxwJjmJ6P9654kedT0GqnbjvvtmIKPldONvV1JP9U
+
+We're ready to try our luck
+
+    $ curl -v "${ORION_BASE_URL}/v2/" \
            -H "header:${HEADER_VALUE}"  \
+           -H "X-AUTH-TOKEN:${USER_JWT}" \
            -H "Fiware-Service:service"
 
 If everything went according to plan, you're looking at a `200`
@@ -531,42 +568,52 @@ response on your terminal with the JSON body returned by Orion :-)
 
 ##### Caching
 
-Oh my, saving the best for last. So for a [whole bunch of
+Saving the best for last, oh my! So for a [whole bunch of
 reasons](https://github.com/orchestracities/boost/issues/9),
 we wound up with our own caching solution instead of the Mixer's.
 (Lucky us, fun times.) Fingers crossed, our caching should be decent
 enough for most scenarios but time will tell. If you dig deep into the
 adapter logs, you should be able to see that it caches calls to DAPS
 and AuthZ. A DAPS ID token gets cached for the amount of time specified
-in the JWT `exp` field. Likewise, an AuthZ decision gets cached until
-the consumer JWT expires.
+in the JWT `exp` field whereas there's more to caching of AuthZ decisions
+than meets the eye:
+
+* A decision gets cached for `t` seconds where `t` is the least of:
+  consumer JWT expiry (computed from `exp` in DAPS token),
+  user JWT expiry (computed from `exp` in KeyRock token), and
+  the configured maximum in the adapter's config—i.e. the value
+  of `cache_decision_max_seconds`.
+* Caching takes into account all call inputs so if you change JWTs
+  or HTTP method/path, etc. even slightly the adapter will ask again
+  his boss AuthZ for permission.
 
 For example, if you look at the logs to see what happened while the
 adapter serviced the last call we made to Orion, you should be able
-to spot a message similar to
+to spot an entry similar to
 
     AuthZ
-      Request: &{
-        Roles: [role0 role1 role2 role3]
-        ResourceID: b3a4a7d2-ce61-471f-b05d-fb82452ae686
-        ResourcePath: /v2
-        FiwareService: service
-        Action: GET
+    Request: &{
+      Daps: {
+        ConnectorID: 4e16f007-d959-4eb2-b47d-78dd0c4eab0e
+        Issuer: https://daps.aisec.fraunhofer.de
+        Membership: true
+        Scopes: [ ids_connector ids_scope_pseudo_second_element ]
+        SecProfile: map[
+          audit_logging: 2
+          pseudo_second_element: ids_security_profile_pseudo_second_element
+          ]
       }
-      Decision: Permit
-      Caching: decision not saved to cache
-
-Uh, what's that "decision **not** saved to cache"? Why?! Well when
-we whipped together that `MY_FAT_JWT` earlier we did it a bit too
-quickly. Without an `exp` field, you can't expect calls to get
-cached, can you? If besides the roles, you also add an `exp` field
-with a Unix timestamp in the future, reexport `HEADER_VALUE` and
-repeat the call, the log message should read
-
-    AuthZ
-      Request: ...
-      Decision: Permit
-      Caching: decision saved to cache
+      KeyRock: {
+        AppID: 7bc2b735-7fdd-40ea-8cb2-acae9b241ca7
+        AppAzfDomain: wCIwcYFkEeqBNVYbm7c9rA
+        Roles: [ role1 role3 role4 ]
+      }
+      FiwareService: service
+      RequestPath: /v2/
+      RequestVerb: GET
+    }
+    Decision: Permit
+    Caching: decision saved to cache
 
 Ah, AuthZ's decision got cached. Try the same call again now and
 then you should see a cache hit
@@ -575,9 +622,90 @@ then you should see a cache hit
       Request: ...
       Decision: Permit (cached)
 
-Just in case you're wondering. Caching takes into account all call
-inputs so if you change the JWT (or HTTP method/path, etc.) just
-slightly the adapter will ask again his old friend AuthZ for permission.
+So far so good, but let's try something trickier. The token below is
+the same as the KeyRock JWT we used just now except it doesn't have
+an `exp` claim—same same but different...
+
+    $ export USER_JWT=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdhbml6YXRpb25zIjpbeyJpZCI6IjA5ZDQzOTVlLTkzMWMtNDc1Yy1hNzIzLWFmMzYyYjU2M2IxMSIsIm5hbWUiOiJPcmcyIiwiZGVzY3JpcHRpb24iOiJPcmcyIiwid2Vic2l0ZSI6bnVsbCwicm9sZXMiOlt7ImlkIjoiYTg1ZTg3ZjgtYjdlOC00NTdlLWFhYjEtZmJjM2E0ZTg4MTg1IiwibmFtZSI6InJvbGUzIn1dfSx7ImlkIjoiM2FlNmEzYTMtNTFmNS00MDI1LTk4YzMtOWNlYWViNTNjMGIyIiwibmFtZSI6Ik9yZzEiLCJkZXNjcmlwdGlvbiI6Ik9yZzEiLCJ3ZWJzaXRlIjpudWxsLCJyb2xlcyI6W3siaWQiOiI5MmMyZDM3Zi01ODBiLTQ3YmEtOTE3OC1kOWNhOGVjMTIzNzgiLCJuYW1lIjoicm9sZTQifSx7ImlkIjoiYTg1ZTg3ZjgtYjdlOC00NTdlLWFhYjEtZmJjM2E0ZTg4MTg1IiwibmFtZSI6InJvbGUzIn1dfV0sImRpc3BsYXlOYW1lIjoiIiwicm9sZXMiOlt7ImlkIjoiOTNjOWU1MDMtMDVlNi00ZmFmLTllNTQtNDUzMWMwOTQ4YzYyIiwibmFtZSI6InJvbGUxIn0seyJpZCI6IjkyYzJkMzdmLTU4MGItNDdiYS05MTc4LWQ5Y2E4ZWMxMjM3OCIsIm5hbWUiOiJyb2xlMyJ9XSwiYXBwX2lkIjoiN2JjMmI3MzUtN2ZkZC00MGVhLThjYjItYWNhZTliMjQxY2E3IiwidHJ1c3RlZF9hcHBzIjpbXSwiaXNHcmF2YXRhckVuYWJsZWQiOmZhbHNlLCJpbWFnZSI6IiIsImVtYWlsIjoiYWxpY2UtdGhlLWFkbWluQHRlc3QuY29tIiwiaWQiOiJhZG1pbiIsImF1dGhvcml6YXRpb25fZGVjaXNpb24iOiIiLCJhcHBfYXpmX2RvbWFpbiI6IndDSXdjWUZrRWVxQk5WWWJtN2M5ckEiLCJlaWRhc19wcm9maWxlIjp7fSwiYXR0cmlidXRlcyI6e30sInVzZXJuYW1lIjoiYWxpY2UiLCJ0eXBlIjoidXNlciIsImlhdCI6MTU4NzIwNjYzNn0.cDwmiYvxVZONMKHSJpE1UAJZdqHSMTzZ-PRchvdv1jE
+
+and if we `curl` the same request again
+
+    $ curl -v "${ORION_BASE_URL}/v2/" \
+           -H "header:${HEADER_VALUE}"  \
+           -H "X-AUTH-TOKEN:${USER_JWT}" \
+           -H "Fiware-Service:service"
+
+this time the log message should read
+
+    AuthZ
+      Request: ... same as earlier ...
+      Decision: Permit
+      Caching: decision not saved to cache
+
+Uh, what's that "decision **not** saved to cache"? Why?! Well without
+an `exp` field, you can't expect calls to get cached, can you? Adapter
+the Constable rightly refuses to make any assumptions about expiry of
+a token without an `exp` field. Likewise, if the idea of accidentally
+caching AuthZ decisions for too long gives you the chills, we've got
+a piece-of-mind configuration knob you can turn to shorten the amount
+of time the adapter can reuse a cached decision. Remember the cache
+mechanics explanation? Well, `cache_decision_max_seconds` does exactly
+what it says on the tin and can help put your mind to rest when you
+have a sneaking suspicion DAPS and KeyRock are having a bit of a cavalier
+attitude to token expiry, setting `exp` too far in the future. Here
+are valid DAPS and KeyRock JWTs expiring in 2052:
+
+    $ export DAPS_JWT=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpZHNfYXR0cmlidXRlcyI6eyJzZWN1cml0eV9wcm9maWxlIjp7ImF1ZGl0X2xvZ2dpbmciOjIsInBzZXVkb19zZWNvbmRfZWxlbWVudCI6Imlkc19zZWN1cml0eV9wcm9maWxlX3BzZXVkb19zZWNvbmRfZWxlbWVudCJ9LCJtZW1iZXJzaGlwIjp0cnVlLCJpZHMtdXJpIjoiaHR0cDovL3NvbWUtdXJpIiwidHJhbnNwb3J0X2NlcnRzX3NoYTI1OCI6ImJhY2I4Nzk1NzU3MzBiYjA4M2YyODNmZDViNjdhOGNiODk2OTQ0ZDFiZTI4YzdiMzIxMTdjZmM3NTdjODFlOTYifSwic2NvcGVzIjpbImlkc19jb25uZWN0b3IiLCJpZHNfc2NvcGVfcHNldWRvX3NlY29uZF9lbGVtZW50Il0sImF1ZCI6IklEU19Db25uZWN0b3IiLCJpc3MiOiJodHRwczovL2RhcHMuYWlzZWMuZnJhdW5ob2Zlci5kZSIsInN1YiI6IkM9REUsTz1GSVdBUkUsT1U9Q1RPSURTQSxDTj00ZTE2ZjAwNy1kOTU5LTRlYjItYjQ3ZC03OGRkMGM0ZWFiMGUiLCJuYmYiOjE1ODgxNjMyODMsImV4cCI6MjU4ODE2Njg4M30.dOnaOtKU6P-UM9xx_xiEaNGQhm6UFdh-AVTmL9Op6_S0LukNOnstkZVLl6yxq077QS-t0lGFjj7ofRL-q6YS2yEfK8JsZ45pynQJz-uIUo85GuHadmtuP-ODHsxFO5-qyzIXcswM8c4aTaJfW6Mi_WZ7hp2yoJPEFhlPPBwHGhExTV_vLmdTEBcGpNdK90j-rcsZSq0K5MOLAVwbQunxoke8b8DZjtIdbOwqm5l7D0banGYfKRUd3r2aFwp2OhcrSb-XeP_kFB9sYZKSimKOJOREJphrTG92XVdFu5Hls3Bwtc7i8QLJwwn-HVHHxWMD2ghzBF0mmGLodvWQNik7ww
+    $ export HEADER_VALUE=$(sh scripts/idsa-header-value.sh "${DAPS_JWT}")
+    $ export USER_JWT=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdhbml6YXRpb25zIjpbeyJpZCI6IjA5ZDQzOTVlLTkzMWMtNDc1Yy1hNzIzLWFmMzYyYjU2M2IxMSIsIm5hbWUiOiJPcmcyIiwiZGVzY3JpcHRpb24iOiJPcmcyIiwid2Vic2l0ZSI6bnVsbCwicm9sZXMiOlt7ImlkIjoiYTg1ZTg3ZjgtYjdlOC00NTdlLWFhYjEtZmJjM2E0ZTg4MTg1IiwibmFtZSI6InJvbGUzIn1dfSx7ImlkIjoiM2FlNmEzYTMtNTFmNS00MDI1LTk4YzMtOWNlYWViNTNjMGIyIiwibmFtZSI6Ik9yZzEiLCJkZXNjcmlwdGlvbiI6Ik9yZzEiLCJ3ZWJzaXRlIjpudWxsLCJyb2xlcyI6W3siaWQiOiI5MmMyZDM3Zi01ODBiLTQ3YmEtOTE3OC1kOWNhOGVjMTIzNzgiLCJuYW1lIjoicm9sZTQifSx7ImlkIjoiYTg1ZTg3ZjgtYjdlOC00NTdlLWFhYjEtZmJjM2E0ZTg4MTg1IiwibmFtZSI6InJvbGUzIn1dfV0sImRpc3BsYXlOYW1lIjoiIiwicm9sZXMiOlt7ImlkIjoiOTNjOWU1MDMtMDVlNi00ZmFmLTllNTQtNDUzMWMwOTQ4YzYyIiwibmFtZSI6InJvbGUxIn0seyJpZCI6IjkyYzJkMzdmLTU4MGItNDdiYS05MTc4LWQ5Y2E4ZWMxMjM3OCIsIm5hbWUiOiJyb2xlMyJ9XSwiYXBwX2lkIjoiN2JjMmI3MzUtN2ZkZC00MGVhLThjYjItYWNhZTliMjQxY2E3IiwidHJ1c3RlZF9hcHBzIjpbXSwiaXNHcmF2YXRhckVuYWJsZWQiOmZhbHNlLCJpbWFnZSI6IiIsImVtYWlsIjoiYWxpY2UtdGhlLWFkbWluQHRlc3QuY29tIiwiaWQiOiJhZG1pbiIsImF1dGhvcml6YXRpb25fZGVjaXNpb24iOiIiLCJhcHBfYXpmX2RvbWFpbiI6IndDSXdjWUZrRWVxQk5WWWJtN2M5ckEiLCJlaWRhc19wcm9maWxlIjp7fSwiYXR0cmlidXRlcyI6e30sInVzZXJuYW1lIjoiYWxpY2UiLCJ0eXBlIjoidXNlciIsImlhdCI6MTU4NzIwNjYzNiwiZXhwIjoyNTg3MjEwMjM2fQ.hbOxwJjmJ6P9654kedT0GqnbjvvtmIKPldONvV1JP9U
+
+Now edit `deployment/sample_operator_cfg.yaml` to set a `5` second max
+for AuthZ decision caching
+
+    params:
+      authz:
+        cache_decision_max_seconds: 5
+
+then save and apply the new settings
+
+    $ kubectl apply -f deployment/sample_operator_cfg.yaml
+
+Finally ask Orion what are the available API endpoints
+
+    $ curl -v "${ORION_BASE_URL}/v2/" \
+           -H "header:${HEADER_VALUE}"  \
+           -H "X-AUTH-TOKEN:${USER_JWT}" \
+           -H "Fiware-Service:service"
+
+wait (exactly!) one second and then make the same call again. The
+adapter log should report
+
+    AuthZ
+      Request: ...
+      Decision: Permit
+      Caching: decision saved to cache
+
+    AuthZ
+      Request: ...
+      Decision: Permit (cached)
+
+The adapter cached the decision for the first call and reused it in
+the second call since `5` seconds haven't gone by so the cache entry
+is still valid. But if you wait another `5` seconds and `curl` the
+same request once more, this time you should find the adapter made a
+fresh call to AuthZ since the previously cached decision is now stale
+
+    AuthZ
+      Request: ...
+      Decision: Permit
+      Caching: decision saved to cache
+
+How much can you shrink `cache_decision_max_seconds`? The lowest possible
+value is `0`, in which case, the adapter won't cache AuthZ decisions.
+Try this: set it to `0`, apply the new setting (`kubectl apply`) and
+`curl` the same request again. The log should report a decision of
+`Permit` but say it wasn't saved to the cache. So if the same request
+comes in again, the adapter will have to call AuthZ again.
 
 
 ##### Cleaning up

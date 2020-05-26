@@ -9,53 +9,69 @@ import (
 	"github.com/orchestracities/boost/orionadapter/codegen/config"
 	od "github.com/orchestracities/boost/orionadapter/codegen/oriondata"
 	"github.com/orchestracities/boost/orionadapter/sec/authz"
+	"github.com/orchestracities/boost/orionadapter/sec/authz/xacml"
 	"github.com/orchestracities/boost/orionadapter/sec/jwt"
 )
 
 type authZCallData struct {
 	consumerHeader string
-	serverURL      string
-	request        *authz.Request
+	authzToken     string
+	pdpBaseURL     string
+	request        *xacml.Request
+	cacheMaxSecs   uint64
 }
 
 func newAuthZCall(params *config.Params, instance *od.InstanceMsg,
-	claims jwt.Payload) (*authZCallData, error) {
-	serverURL, request, err := buildAuthZRequest(params, instance, claims)
+	consumerClaims, userClaims jwt.Payload) (*authZCallData, error) {
+	pdpBaseURL, request, err :=
+		buildAuthZRequest(params, instance, consumerClaims, userClaims)
+	cacheMaxSecs, err := getAuthZCacheDecisionMaxSeconds(params, err)
 	if err != nil {
 		return nil, err
 	}
 
 	return &authZCallData{
-		consumerHeader: instance.ClientToken,
-		serverURL:      serverURL,
+		consumerHeader: instance.IdsConsumerHeader,
+		authzToken:     instance.IdsAuthzToken,
+		pdpBaseURL:     pdpBaseURL,
 		request:        request,
+		cacheMaxSecs:   cacheMaxSecs,
 	}, nil
 }
 
 func (d *authZCallData) authZize() (authorized bool, e error) {
-	client := authz.NewClient(d.serverURL)
+	client, err := authz.NewClient(d.pdpBaseURL)
+	if err != nil {
+		return false, err
+	}
 	return client.Authorize(d.request)
 }
 
 func (d *authZCallData) cachedAuthZDecision() (authorized bool, found bool) {
-	return cache.LookupAuthZDecision(d.consumerHeader, d.request)
+	return cache.LookupAuthZDecision(d.consumerHeader, d.authzToken, d.request)
 }
 
 func (d *authZCallData) cacheAuthZDecision(authorized bool) (ok bool) {
-	return cache.PutAuthZDecision(d.consumerHeader, d.request, authorized)
+	return cache.PutAuthZDecision(d.consumerHeader, d.authzToken,
+		d.request, authorized, d.cacheMaxSecs)
 }
 
 func authorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params,
-	claims jwt.Payload) (err *od.HandleOrionadapterResponse) {
+	consumerClaims jwt.Payload) (err *od.HandleOrionadapterResponse) {
 	if isAuthZEnabled(params) {
-		return doAuthorizeWithAuthZ(r, params, claims)
+		return doAuthorizeWithAuthZ(r, params, consumerClaims)
 	}
 	return nil
 }
 
 func doAuthorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params,
-	claims jwt.Payload) (err *od.HandleOrionadapterResponse) {
-	z, zErr := newAuthZCall(params, r.Instance, claims)
+	consumerClaims jwt.Payload) (err *od.HandleOrionadapterResponse) {
+	userClaims, err := validateUser(r, params)
+	if err != nil {
+		return err
+	}
+
+	z, zErr := newAuthZCall(params, r.Instance, consumerClaims, userClaims)
 	if zErr != nil {
 		z.logConfigError(zErr)
 		return authzError()
@@ -88,16 +104,25 @@ func doAuthorizeWithAuthZ(r *od.HandleOrionadapterRequest, params *config.Params
 }
 
 func buildAuthZRequest(p *config.Params, instance *od.InstanceMsg,
-	claims jwt.Payload) (string, *authz.Request, error) {
-	url, err := getAuthZServerURL(p, nil)
-	rid, err := getAuthZResourceID(p, err)
+	consumerClaims, userClaims jwt.Payload) (string, *xacml.Request, error) {
+	url, err := getAuthZPdpBaseURL(p, nil)
 
-	return url, &authz.Request{
-		Roles:         claims.Scopes(),
-		ResourceID:    rid,
-		ResourcePath:  instance.RequestPath,
+	return url, &xacml.Request{
+		Daps: xacml.Daps{
+			ConnectorID: consumerClaims.SubjectCommonName(),
+			Issuer:      consumerClaims.Issuer(),
+			Membership:  consumerClaims.Membership(),
+			Scopes:      consumerClaims.Scopes(),
+			SecProfile:  consumerClaims.SecProfile(),
+		},
+		KeyRock: xacml.KeyRock{
+			AppID:        userClaims.AppID(),
+			AppAzfDomain: userClaims.AppAzfDomain(),
+			Roles:        userClaims.Roles(),
+		},
 		FiwareService: instance.FiwareService,
-		Action:        instance.RequestMethod,
+		RequestPath:   instance.RequestPath,
+		RequestVerb:   instance.RequestMethod,
 	}, err
 }
 

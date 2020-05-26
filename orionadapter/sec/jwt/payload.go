@@ -1,10 +1,6 @@
 package jwt
 
 import (
-	"math"
-	"strconv"
-	"time"
-
 	jot "github.com/dgrijalva/jwt-go"
 )
 
@@ -43,23 +39,26 @@ func (p Payload) IsEmpty() bool {
 	return len(p) == 0
 }
 
-// Scopes returns the 'scopes' array in the JWT payload. If there's no
-// 'scopes' array or it isn't an array of strings, then return an empty
-// slice.
-func (p Payload) Scopes() []string {
-	switch scopes := p["scopes"].(type) {
-	case []interface{}:
-		return maybeStringSlice(scopes)
-	default:
-		return []string{}
-	}
+// Standard claims.
+
+// nbf returns the raw 'nbf' field value or nil if there's no 'nbf'.
+func (p Payload) nbf() interface{} {
+	return p["nbf"]
+}
+
+// exp returns the raw 'exp' field value or nil if there's no 'exp'.
+func (p Payload) exp() interface{} {
+	return p["exp"]
 }
 
 // ExpiresIn tells for how many seconds from now the token is still valid
-// by looking at the 'exp' standard claim. If there's no 'exp' field, then
-// return 0.
+// by looking at the 'exp' standard claim. If there's no 'exp' field or
+// the value isn't a numeric date, then return 0.
+// Any JSON number value counts as a numeric date (seconds since the epoch)
+// as well as any string representation of a number---e.g. "2143" gets
+// interpreted as 2143 seconds since the epoch but "21 43" does not.
 func (p Payload) ExpiresIn() uint64 {
-	now := toUint64(time.Now().Unix())
+	now := secondsSinceEpoch()
 	exp := p.ExpirationTime()
 	if exp <= now {
 		return 0
@@ -68,81 +67,164 @@ func (p Payload) ExpiresIn() uint64 {
 }
 
 // ExpirationTime reads the value of the 'exp' standard claim. If there's no
-// 'exp' field, then return 0.
+// 'exp' field or the value isn't a numeric date, then return 0.
+// Any JSON number value counts as a numeric date (seconds since the epoch)
+// as well as any string representation of a number---e.g. "2143" gets
+// interpreted as 2143 seconds since the epoch but "21 43" does not.
 func (p Payload) ExpirationTime() uint64 {
-	return toUint64(p["exp"])
+	return toUint64(p.exp())
 }
 
-// conversion functions
+// IsWithinAllowedTimeInterval tells if the current time falls within the
+// token's 'nbf' ("not before" claim) and 'exp' ("expiry time") bounds.
+// More accurately, return true just in case both the below conditions hold
+//
+// 1. 'exp' isn't present or, if it is, specifies a date in the future.
+// 2. 'nbf' isn't present or, if it is, doesn't specify a date in the
+//    future.
+//
+// Notice that if either field is present but doesn't hold a numeric date
+// value, then we return false since (1) and (2) don't hold true. Any JSON
+// number value counts as a numeric date (seconds since the epoch) as well
+// as any string representation of a number, e.g. "2143" gets interpreted
+// as 2143 seconds since the epoch but "21 43" does not.
+func (p Payload) IsWithinAllowedTimeInterval() bool {
+	nbfCheck, expCheck := true, true
+	now := secondsSinceEpoch()
 
-func toUint64(x interface{}) uint64 {
-	switch x.(type) {
-	case int8:
-		return intToUint64(int64(x.(int8)))
-	case int16:
-		return intToUint64(int64(x.(int16)))
-	case int32:
-		return intToUint64(int64(x.(int32)))
-	case int64:
-		return intToUint64(x.(int64))
-	case int:
-		return intToUint64(int64(x.(int)))
-	case uint8: // NB in Go, byte = uint8
-		return uint64(x.(uint8))
-	case uint16:
-		return uint64(x.(uint16))
-	case uint32:
-		return uint64(x.(uint32))
-	case uint64:
-		return x.(uint64)
-	case uint:
-		return uint64(x.(uint))
-	case float32:
-		return floatToUint64(float64(x.(float32)))
-	case float64:
-		return floatToUint64(x.(float64))
-	case string:
-		return stringToUint64(x.(string))
-	default:
-		return 0
+	if p.nbf() != nil {
+		nbf := toUint64(p.nbf()) // = 0 if not numeric or string-numeric
+		nbfCheck = isNumeric(p.nbf()) && nbf <= now
 	}
+	if p.exp() != nil {
+		expCheck = isNumeric(p.exp()) && now < p.ExpirationTime()
+	}
+
+	return nbfCheck && expCheck
 }
 
-func intToUint64(x int64) uint64 {
-	if x <= 0 {
-		return 0
-	}
-	return uint64(x)
+// NOTE. IsWithinAllowedTimeInterval case analysis. (We've covered all the
+// bases :-)
+// Each of the nbf, exp field x can be in one of three states ∈ S = {0, 1, 2}
+//
+//     0 : not present; e.g. { x: null } or no x in {...}
+//     1 : present but not numeric; e.g. { x: "wada wada" }, { x: [12323] }
+//     2 : present and numeric; e.g. { x: 2234 }
+//
+// so there are nine possible states (n, e) ∈ S × S for the pair (nbf, exp).
+// If a field is present than it must be numeric, so we return false for
+// any of the states { (n, e) | n = 1  ∨  e = 1 } whereas the result will
+// be true if there's nothing to check---(0, 0) state, when both fields
+// aren't there or both have a nil value. We're left with another three
+// states to deal with: (0, 2), (2, 0) and (2, 2). If nbf (exp) isn't
+// present, then we base our decision on exp (nbf) only whereas if both
+// nbf and exp are present and numeric we use both. The below decision table
+// sums it all up.
+//
+//     nbf  exp
+//     ---  ---
+//      0    0   ==> T
+//      0    1   ==> F
+//      0    2   ==> now < exp
+//      1    0   ==> F
+//      1    1   ==> F
+//      1    2   ==> F
+//      2    0   ==> nbf ≤ now
+//      2    1   ==> F
+//      2    2   ==> nbf ≤ now < exp
+//
+
+// Issuer reads the value of the 'iss' standard claim. If there's no
+// 'iss' field, then return empty.
+func (p Payload) Issuer() string {
+	return toString(p["iss"])
 }
 
-func floatToUint64(x float64) uint64 {
-	y := math.Floor(x)
-	if y <= 0 {
-		return 0
-	}
-	if y >= math.MaxUint64 {
-		return math.MaxUint64
-	}
-	return uint64(y)
+// Subject reads the value of the 'sub' standard claim. If there's no
+// 'sub' field, then return empty.
+func (p Payload) Subject() string {
+	return toString(p["sub"])
 }
 
-func stringToUint64(x string) uint64 {
-	y, err := strconv.ParseFloat(x, 64)
-	if err != nil {
-		return 0
+// Custom claims
+
+// SubjectCommonName extracts the subject common name in the JWT payload of
+// a DAPS token. If there's no 'sub' field or it doesn't contain a parsable
+// 'CN' element, return empty.
+func (p Payload) SubjectCommonName() string {
+	if parsed, ok := parseSubjectCommonName(p.Subject()); ok {
+		return parsed
 	}
-	return floatToUint64(y)
+	return ""
 }
 
-func maybeStringSlice(xs []interface{}) []string {
-	size := len(xs)
-	ys := make([]string, size, size)
-	for i, x := range xs {
-		if y, ok := x.(string); ok {
-			ys[i] = y
-		} else {
-			return []string{}
+// idsAttributes returns the raw 'ids_attributes' value or empty if there's
+// no 'idsAttributes' field.
+func (p Payload) idsAttributes() map[string]interface{} {
+	return toMap(p["ids_attributes"])
+}
+
+// SecProfile extracts the IDS security profile block of a DAPS JWT as a map.
+// If the block isn't there, return an empty map.
+func (p Payload) SecProfile() map[string]string {
+	attrs := p.idsAttributes()
+	return toMapOfString(attrs["security_profile"])
+}
+
+// SecProfileAuditLogging reads the value of the IDS audit logging field
+// as a string from a DAPS JWT. If the field isn't there, return empty.
+func (p Payload) SecProfileAuditLogging() string {
+	return p.SecProfile()["audit_logging"]
+}
+
+// Membership reads the value of the IDS membership field as a string from
+// a DAPS JWT. If the field isn't there, return empty.
+func (p Payload) Membership() string {
+	attrs := p.idsAttributes()
+	return stringify(attrs["membership"])
+}
+
+// Scopes returns the 'scopes' array in the JWT payload of a DAPS token.
+// If there's no 'scopes' array or none of its elements is a string, then
+// return an empty slice. Otherwise, return a slice with the string elements
+// found in the 'scopes' array, in the same order in which they appear.
+func (p Payload) Scopes() []string {
+	return toListOfString(p["scopes"])
+}
+
+// Roles returns all KeyRock role names in sight from the JWT payload of a
+// KeyRock token, removing any duplicates and empty strings.
+// More accurately, consider the set of all name attributes of role objects
+// found in top level 'organizations' and 'roles' array. Out of this set,
+// list those names having a non-empty string value, sorting them in
+// ascending alphabetical order.
+func (p Payload) Roles() []string {
+	roles := make([]map[string]interface{}, 0, 256)
+	for _, org := range toListOfMap(p["organizations"]) {
+		xs := toListOfMap(org["roles"])
+		roles = append(roles, xs...)
+	}
+	ys := toListOfMap(p["roles"])
+	roles = append(roles, ys...)
+
+	names := collectStrings("name", roles)
+	nameSet := make([]string, 0, len(names))
+	for _, n := range dedupeStrings(names) {
+		if n != "" {
+			nameSet = append(nameSet, n)
 		}
 	}
-	return ys
+	return nameSet
+}
+
+// AppID reads the value of the 'app_id' from a KeyRock JWT. If the field isn't
+// there or isn't a string, return empty.
+func (p Payload) AppID() string {
+	return toString(p["app_id"])
+}
+
+// AppAzfDomain reads the value of the 'app_azf_domain' from a KeyRock JWT.
+// If the field isn't there or isn't a string, return empty.
+func (p Payload) AppAzfDomain() string {
+	return toString(p["app_azf_domain"])
 }
