@@ -12,14 +12,14 @@ Ready, steady, go...
 1. [Set up your dev env][dev-env].
 2. [Take the adapter for a spin][spin].
 3. [Local cluster deployment][local-cluster].
-  1. [Deploy Istio][deploy-istio].
-  2. [Build adapter and mock DAPS images][images].
-  3. [Deploy dummy services and get to know the mesh][deploy-dummies].
-  4. [Deploy & test the adapter][deploy-adapter].
-  5. [Deploy & test Orion][deploy-orion].
-  6. [Enforce access-control with AuthZ][authz].
-  7. [Check out caching][caching].
-  8. [Clean up][clean-up].
+    * [Deploy Istio][deploy-istio].
+    * [Build adapter and mock DAPS images][images].
+    * [Deploy dummy services and get to know the mesh][deploy-dummies].
+    * [Deploy the adapter and test Boost security][deploy-adapter].
+    * [Secure Orion][deploy-orion].
+    * [Enforce access-control with AuthZ][authz].
+    * [Check out caching][caching].
+    * [Clean up][clean-up].
 4. Rancher deployment. Coming soon!
 
 
