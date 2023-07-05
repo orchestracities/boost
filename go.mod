@@ -6,9 +6,8 @@ require (
 	github.com/beevik/etree v1.1.0
 	github.com/dgraph-io/ristretto v0.0.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/gogo/protobuf v1.3.0
-	github.com/google/uuid v1.1.1
-	google.golang.org/grpc v1.24.0
+	github.com/google/uuid v1.3.0
+	google.golang.org/grpc v1.53.0
 	istio.io/api v0.0.0-20191115171246-7a8183d7e4bf
 	istio.io/istio v0.0.0-20191120065046-31a840407eca
 	istio.io/pkg v0.0.0-20191113122952-4f521de9c8ca
